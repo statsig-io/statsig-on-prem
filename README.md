@@ -3,7 +3,7 @@ An on-premise solution for managing Statsig configs independently from Statsig C
 
 ### Example: Bootstrap
 Bootstrap Statsig SDK using Statsig on-prem to generate a specs JSON
-```
+```ts
 import { StatsigOnPrem, StatsigStorageExample } from "statsig-on-prem";
 import StatsigSDK from "statsig-node";
 
@@ -26,7 +26,7 @@ StatsigSDK.shutdown();
 ### Example: Data Adapter
 Incorporate Statsig on-prem with a data adapter to serve updates to the Statsig SDK
 
-```
+```ts
 import { StatsigOnPrem, StatsigStorageExample } from "statsig-on-prem";
 import StatsigSDK, { IDataAdapter, AdapterResponse, DataAdapterKey } from "statsig-node";
 
