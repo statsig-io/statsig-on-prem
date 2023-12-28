@@ -20,7 +20,7 @@ await StatsigSDK.initialize(sdkKey, {
   bootstrapValues: JSON.stringify(configSpecs),
 });
 
-StatsigSDK.checkGateSync({ userID: "123" }, "test-gate"));
+console.log(StatsigSDK.checkGateSync({ userID: "123" }, "test-gate"));
 StatsigSDK.shutdown();
 ```
 ### Example: Data Adapter
@@ -28,23 +28,22 @@ Incorporate Statsig on-prem with a data adapter to serve updates to the Statsig 
 
 ```ts
 import { StatsigOnPrem, StatsigStorageExample } from "statsig-on-prem";
-import StatsigSDK, { IDataAdapter, AdapterResponse, DataAdapterKey } from "statsig-node";
+import StatsigSDK, { IDataAdapter, AdapterResponse } from "statsig-node";
 
 class ExampleDataAdapter implements IDataAdapter {
   public constructor(private statsigOnPrem: StatsigOnPrem, private sdkKey: string) {}
 
   public async get(key: string): Promise<AdapterResponse> {
-    if (key === DataAdapterKey.Rulesets) {
-      return { result: JSON.stringify(statsigOnPrem.getConfigSpecs(this.sdkKey)) };
-    } else if (key === DataAdapterKey.IDLists {
-      return { error: new Error("ID Lists not supported") };
+    if (key === "statsig.cache") {
+      const configSpecs = await this.statsigOnPrem.getConfigSpecs(this.sdkKey);
+      return { result: JSON.stringify(configSpecs) };
     } else {
-      return { error: new Error("Should never occur");
+      return { error: new Error("Not supported") };
     }
   }
 
   public supportsPollingUpdatesFor(key: string): boolean {
-    if (key === DataAdapterKey.Rulesets) {
+    if (key === "statsig.cache") {
       return true;
     } else {
       return false;
@@ -74,6 +73,11 @@ await StatsigSDK.initialize(sdkKey, {
   dataAdapter: new ExampleDataAdapter(statsig, sdkKey),
 });
 
-StatsigSDK.checkGateSync({ userID: "123" }, "test-gate"));
+console.log(StatsigSDK.checkGateSync({ userID: "123" }, "test-gate"));
+
+await statsig.updateGate("test-gate", { enabled: false });
+await StatsigSDK.syncConfigSpecs();
+
+console.log(StatsigSDK.checkGateSync({ userID: "123" }, "test-gate"));
 StatsigSDK.shutdown();
 ```

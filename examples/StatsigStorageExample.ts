@@ -1,4 +1,4 @@
-import { StorageInterface } from "../../interfaces/StorageInterface";
+import { StorageInterface } from "../src/interfaces/StorageInterface";
 
 export default class StatsigStorageExample implements StorageInterface {
   private store: Record<string, string>;

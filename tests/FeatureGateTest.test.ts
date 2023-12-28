@@ -1,4 +1,4 @@
-import StatsigStorageExample from "./data/StatsigStorageExample";
+import StatsigStorageExample from "../examples/StatsigStorageExample";
 import StatsigOnPrem from "../src/StatsigOnPrem";
 import StatsigSDK from "statsig-node";
 import StatsigInstanceUtils from "statsig-node/dist/StatsigInstanceUtils";
