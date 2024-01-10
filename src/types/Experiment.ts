@@ -1,5 +1,3 @@
-import { APIEntityType } from "./ConfigSpecs";
-
 export declare type Experiment = {
   name: string;
   salt: string;
@@ -11,6 +9,10 @@ export declare type ExperimentMetadata = {
   started: boolean;
   enabled: boolean;
 }
+
+export type ExperimentCreationArgs = {
+  targetApps?: string[];
+} & ExperimentMetadata;
 
 export declare type ExperimentGroup = {
   name: string;

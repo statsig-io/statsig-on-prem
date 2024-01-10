@@ -1,5 +1,3 @@
-import { APIEntityType } from "./ConfigSpecs";
-
 export declare type FeatureGate = {
   name: string;
   salt: string;
@@ -8,3 +6,7 @@ export declare type FeatureGate = {
 export declare type FeatureGateMetadata = {
   enabled: boolean;
 };
+
+export type FeatureGateCreationArgs = {
+  targetApps?: string[];
+} & FeatureGateMetadata;
