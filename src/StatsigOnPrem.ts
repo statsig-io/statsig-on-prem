@@ -19,6 +19,7 @@ import { SpecsCacheInterface } from "./interfaces/SpecsCacheInterface";
 import SpecsCache from "./SpecsCache";
 import StorageHandler from "./utils/StorageHandler";
 import CacheUtils from "./utils/CacheUtils";
+import HashUtils from "./utils/HashUtils";
 
 export default class StatsigOnPrem implements StatsigInterface {
   private store: StorageHandler;
@@ -34,6 +35,10 @@ export default class StatsigOnPrem implements StatsigInterface {
 
   public async shutdown(): Promise<void> {
     await this.store.shutdown();
+  }
+
+  public async clearCache(): Promise<void> {
+    await this.cache.clearAll();
   }
 
   public async getConfigSpecs(sdkKey: string): Promise<ConfigSpecs> {
@@ -77,6 +82,36 @@ export default class StatsigOnPrem implements StatsigInterface {
       )
     );
 
+    const registeredKeys = await this.store.getRegisteredSDKKeys();
+
+    const hashedSDKKeysToEntityNames = new Map(
+      filterNulls(
+        await Promise.all(
+          Array.from(registeredKeys).map(async (key) => {
+            const targetApp = await this.store.getTargetAppFromSDKKey(key);
+            if (targetApp == null) {
+              return null;
+            }
+            const entities = await this.store.getEntityAssocs(targetApp);
+            if (entities == null) {
+              return null;
+            }
+            const hashedKey = HashUtils.hashString(key);
+            return [
+              hashedKey,
+              {
+                gates: Array.from(entities.gates),
+                configs: [
+                  ...Array.from(entities.configs),
+                  ...Array.from(entities.experiments),
+                ],
+              },
+            ];
+          })
+        )
+      )
+    );
+
     const configSpecs: ConfigSpecs = {
       feature_gates: gates.map((gate) => ConfigSpecsUtils.getConfigSpec(gate)),
       dynamic_configs: [...configs, ...experiments].map((config) =>
@@ -84,6 +119,9 @@ export default class StatsigOnPrem implements StatsigInterface {
       ),
       layer_configs: [],
       layers: {},
+      hashed_sdk_keys_to_entities: Object.fromEntries(
+        hashedSDKKeysToEntityNames
+      ),
       has_updates: true,
       time: Date.now(),
     };
