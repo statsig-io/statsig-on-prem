@@ -32,7 +32,7 @@ export default class EntityExperiment implements IEntity {
         conditions: [
           {
             type: APIConditionType.USER_BUCKET,
-            targetValue: bucketSize * index,
+            targetValue: bucketSize * (index + 1),
             operator: APIOperatorType.LT,
             field: null,
             additionalValues: {
