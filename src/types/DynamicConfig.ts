@@ -1,6 +1,7 @@
 export declare type DynamicConfig = {
   name: string;
   salt: string;
+  idType: string;
 } & DynamicConfigMetadata;
 
 export declare type DynamicConfigMetadata = {
@@ -10,4 +11,5 @@ export declare type DynamicConfigMetadata = {
 
 export type DynamicConfigCreationArgs = {
   targetApps?: string[];
+  idType?: string;
 } & DynamicConfigMetadata;

@@ -139,10 +139,11 @@ export default class StatsigOnPrem implements StatsigInterface {
     name: string,
     args: FeatureGateCreationArgs
   ): Promise<void> {
-    const { targetApps, ...metadata } = args;
+    const { targetApps, idType, ...metadata } = args;
     const gate: FeatureGate = {
       name,
       salt: IDUtils.generateNewSalt(),
+      idType: idType ?? 'userID',
       ...metadata,
     };
     await this.store.addGate(name, gate, targetApps);
@@ -179,10 +180,11 @@ export default class StatsigOnPrem implements StatsigInterface {
     name: string,
     args: ExperimentCreationArgs
   ): Promise<void> {
-    const { targetApps, ...metadata } = args;
+    const { targetApps, idType, ...metadata } = args;
     const experiment: Experiment = {
       name,
       salt: IDUtils.generateNewSalt(),
+      idType: idType ?? 'userID',
       ...metadata,
     };
     await this.store.addExperiment(name, experiment, targetApps);
@@ -242,10 +244,11 @@ export default class StatsigOnPrem implements StatsigInterface {
     name: string,
     args: DynamicConfigCreationArgs
   ): Promise<void> {
-    const { targetApps, ...metadata } = args;
+    const { targetApps, idType, ...metadata } = args;
     const config: DynamicConfig = {
       name,
       salt: IDUtils.generateNewSalt(),
+      idType: idType ?? 'userID',
       ...metadata,
     };
     await this.store.addConfig(name, config, targetApps);

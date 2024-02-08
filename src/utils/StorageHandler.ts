@@ -66,7 +66,7 @@ export default class StorageHandler {
 
   public async updateConfig(
     name: string,
-    config: FeatureGate,
+    config: DynamicConfig,
     targetApps?: string[]
   ): Promise<void> {
     await this.updateEntity(
