@@ -15,6 +15,7 @@ export enum StorageKeyType {
   TargetAppNames,
   TargetAppAssignment,
   SDKKey,
+  SDKKeys,
 }
 
 export type SupportedAPIEntityType = Exclude<
@@ -44,6 +45,8 @@ export default class StorageUtils {
         return `${GLOBAL_PREFIX}:${hashedID}:targetApp`;
       case StorageKeyType.SDKKey:
         return `${GLOBAL_PREFIX}:sdkKey:${hashedID}`;
+      case StorageKeyType.SDKKeys:
+        return `${GLOBAL_PREFIX}:sdkKeys`;
       default:
         throw new ExhaustSwitchError(type);
     }
@@ -66,19 +69,18 @@ export default class StorageUtils {
     }
   }
 
-
   public static getEntityGroupKeyForEntityType(
     type: SupportedAPIEntityType
   ): keyof EntityNames {
     switch (type) {
       case APIEntityType.FEATURE_GATE:
       case APIEntityType.HOLDOUT:
-        return 'gates';
+        return "gates";
       case APIEntityType.DYNAMIC_CONFIG:
-        return 'configs';
+        return "configs";
       case APIEntityType.EXPERIMENT:
       case APIEntityType.AUTOTUNE:
-        return 'experiments';
+        return "experiments";
       default:
         throw new ExhaustSwitchError(type);
     }

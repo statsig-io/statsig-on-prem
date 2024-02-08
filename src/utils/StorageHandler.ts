@@ -184,15 +184,19 @@ export default class StorageHandler {
       StorageUtils.getStorageKey(StorageKeyType.SDKKey, sdkKey),
       "registered"
     );
+    await this.updateRegisteredSDKKeys(new Set([sdkKey]), MutationType.Add);
   }
 
   public async removeSDKKey(sdkKey: string): Promise<void> {
     await this.storage.delete(
       StorageUtils.getStorageKey(StorageKeyType.SDKKey, sdkKey)
     );
+    await this.updateRegisteredSDKKeys(new Set([sdkKey]), MutationType.Remove);
   }
 
-  public async getEntityAssocs(targetApp?: string): Promise<EntityNames> {
+  public async getEntityAssocs(
+    targetApp?: string
+  ): Promise<EntityNames | null> {
     const existing = await this.storage.get(
       StorageUtils.getStorageKey(
         StorageKeyType.EntityNames,
@@ -201,7 +205,7 @@ export default class StorageHandler {
     );
     return existing
       ? StorageUtils.deserializeSets<EntityNames>(existing)
-      : { gates: new Set(), experiments: new Set(), configs: new Set() };
+      : null;
   }
 
   private async updateEntityAssocs(
@@ -209,7 +213,11 @@ export default class StorageHandler {
     mutation: MutationType,
     targetApp?: string
   ): Promise<void> {
-    const existing = await this.getEntityAssocs(targetApp);
+    const existing = (await this.getEntityAssocs(targetApp)) ?? {
+      gates: new Set(),
+      experiments: new Set(),
+      configs: new Set(),
+    };
     const operation = (set: Set<string>) => {
       switch (mutation) {
         case MutationType.Add:
@@ -347,7 +355,43 @@ export default class StorageHandler {
     mutation: MutationType
   ): Promise<void> {
     const existing = await this.getTargetAppNames();
-    const operation = (set: Set<string>) => {
+    await this.updateSet(existing, targetApps, mutation);
+
+    await this.storage.set(
+      StorageUtils.getStorageKey(StorageKeyType.TargetAppNames),
+      StorageUtils.serializeSets(existing)
+    );
+  }
+
+  public async getRegisteredSDKKeys(): Promise<Set<string>> {
+    const serialized = await this.storage.get(
+      StorageUtils.getStorageKey(StorageKeyType.SDKKeys)
+    );
+    return serialized
+      ? StorageUtils.deserializeSets<Set<string>>(serialized)
+      : new Set();
+  }
+
+  private async updateRegisteredSDKKeys(
+    sdkKeys: Set<string>,
+    mutation: MutationType
+  ): Promise<void> {
+    const existing = await this.getRegisteredSDKKeys();
+    await this.updateSet(existing, sdkKeys, mutation);
+
+    await this.storage.set(
+      StorageUtils.getStorageKey(StorageKeyType.SDKKeys),
+      StorageUtils.serializeSets(existing)
+    );
+  }
+
+  // Updates the existing set in-place
+  private async updateSet<T>(
+    existing: Set<T>,
+    updating: Set<T>,
+    mutation: MutationType
+  ): Promise<void> {
+    const operation = (set: Set<T>) => {
       switch (mutation) {
         case MutationType.Add:
           return set.add;
@@ -355,11 +399,6 @@ export default class StorageHandler {
           return set.delete;
       }
     };
-    targetApps.forEach(operation(existing), existing);
-
-    await this.storage.set(
-      StorageUtils.getStorageKey(StorageKeyType.TargetAppNames),
-      StorageUtils.serializeSets(existing)
-    );
+    updating.forEach(operation(existing), existing);
   }
 }

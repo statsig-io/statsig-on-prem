@@ -14,6 +14,13 @@ export default class StatsigStorageExample implements StorageInterface {
   async delete(key: string): Promise<void> {
     delete this.store[key];
   }
-  async initialize(): Promise<void> {/* no-op */}
-  async shutdown(): Promise<void> {/* no-op */}
+  async initialize(): Promise<void> {
+    /* no-op */
+  }
+  async shutdown(): Promise<void> {
+    /* no-op */
+  }
+  clearAll() {
+    this.store = {};
+  }
 }
