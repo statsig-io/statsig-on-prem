@@ -33,13 +33,13 @@ export default class EntityFeatureGate implements IEntity {
             operator: null,
             field: null,
             additionalValues: {},
-            idType: "userID",
+            idType: this.getIDType(),
           },
         ],
         returnValue: true,
         id: "rule1",
         salt: "rule1",
-        idType: "userID",
+        idType: this.getIDType(),
       },
     ];
   }
@@ -50,7 +50,7 @@ export default class EntityFeatureGate implements IEntity {
     return false;
   }
   getIDType(): string {
-    return "userID";
+    return this.gate.idType;
   }
   getAPIEntity(): APIEntityType {
     return APIEntityType.FEATURE_GATE;

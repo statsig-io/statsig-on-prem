@@ -26,7 +26,7 @@ export default class EntityDynamicConfig implements IEntity {
     return false;
   }
   getIDType(): string {
-    return "userID";
+    return this.config.idType;
   }
   getAPIEntity(): APIEntityType {
     return APIEntityType.DYNAMIC_CONFIG;

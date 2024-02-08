@@ -38,13 +38,13 @@ export default class EntityExperiment implements IEntity {
             additionalValues: {
               salt: this.experiment.salt,
             },
-            idType: "userID",
+            idType: this.getIDType(),
           },
         ],
         returnValue: group.parameters,
         id: `rule-${index}`,
         salt: `rule-${index}`,
-        idType: "userID",
+        idType: this.getIDType(),
         isExperimentGroup: true,
       };
     });
@@ -56,7 +56,7 @@ export default class EntityExperiment implements IEntity {
     return false;
   }
   getIDType(): string {
-    return "userID";
+    return this.experiment.idType;
   }
   getAPIEntity(): APIEntityType {
     return APIEntityType.EXPERIMENT;

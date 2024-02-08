@@ -1,6 +1,7 @@
 export declare type Experiment = {
   name: string;
   salt: string;
+  idType: string;
 } & ExperimentMetadata;
 
 export declare type ExperimentMetadata = {
@@ -12,6 +13,7 @@ export declare type ExperimentMetadata = {
 
 export type ExperimentCreationArgs = {
   targetApps?: string[];
+  idType?: string;
 } & ExperimentMetadata;
 
 export declare type ExperimentGroup = {
