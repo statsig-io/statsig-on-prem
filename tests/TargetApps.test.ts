@@ -82,4 +82,30 @@ describe("Target Apps", () => {
       },
     });
   });
+
+  it("Get list of Target Apps after creation", async () => {
+    await statsig.createTargetApp("serverApp", {
+      gates: new Set(["gate_1"]),
+      configs: new Set(["config_1"]),
+      experiments: new Set(["exp_1"]),
+    });
+    await statsig.createTargetApp("clientApp", {
+      gates: new Set(["gate_2"]),
+      configs: new Set(["config_2"]),
+      experiments: new Set(["exp_2"]),
+    });
+    const targetAppNames = await statsig.getTargetAppNames();
+    expect(targetAppNames).toEqual(new Set(["serverApp", "clientApp"]))
+  });
+
+  it("Get list of Target Apps after deletion", async () => {
+    await statsig.createTargetApp("serverApp", {
+      gates: new Set(["gate_1"]),
+      configs: new Set(["config_1"]),
+      experiments: new Set(["exp_1"]),
+    });
+    await statsig.deleteTargetApp("serverApp");
+    const targetAppNames = await statsig.getTargetAppNames();
+    expect(targetAppNames).toEqual(new Set())
+  });
 });

@@ -208,6 +208,15 @@ export default class StorageHandler {
       : null;
   }
 
+  public async getTargetAppNames(): Promise<TargetAppNames> {
+    const serialized = await this.storage.get(
+      StorageUtils.getStorageKey(StorageKeyType.TargetAppNames)
+    );
+    return serialized
+      ? StorageUtils.deserializeSets<TargetAppNames>(serialized)
+      : new Set();
+  }
+
   private async updateEntityAssocs(
     entities: Partial<EntityNames>,
     mutation: MutationType,
@@ -339,15 +348,6 @@ export default class StorageHandler {
       )
     );
     await this.removeEntityAssocs(entityNames);
-  }
-
-  private async getTargetAppNames(): Promise<TargetAppNames> {
-    const serialized = await this.storage.get(
-      StorageUtils.getStorageKey(StorageKeyType.TargetAppNames)
-    );
-    return serialized
-      ? StorageUtils.deserializeSets<TargetAppNames>(serialized)
-      : new Set();
   }
 
   private async updateTargetAppNames(

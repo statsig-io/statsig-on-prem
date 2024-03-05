@@ -20,6 +20,7 @@ import SpecsCache from "./SpecsCache";
 import StorageHandler from "./utils/StorageHandler";
 import CacheUtils from "./utils/CacheUtils";
 import HashUtils from "./utils/HashUtils";
+import { TargetAppNames } from "./types/TargetAppNames";
 
 export default class StatsigOnPrem implements StatsigInterface {
   private store: StorageHandler;
@@ -342,6 +343,10 @@ export default class StatsigOnPrem implements StatsigInterface {
     if (targetApp) {
       await this.cache.clear(CacheUtils.getCacheKey(targetApp));
     }
+  }
+
+  public async getTargetAppNames(): Promise<TargetAppNames> {
+    return this.store.getTargetAppNames();
   }
 
   /* SDK Keys */
