@@ -120,17 +120,22 @@ export interface StatsigInterface {
     entities: EntityNames
   ): Promise<void>;
   /**
-   * Assign an existing target app to an SDK key
-   * @param targetApp Name of the target app
+   * Assign existing target apps to an SDK key
+   * @param targetApps Names of target apps to add
    * @param sdkKey SDK key to assign the target app to
    */
-  assignTargetAppToSDKKey(targetApp: string, sdkKey: string): Promise<void>;
+  assignTargetAppsToSDKKey(targetApps: string[], sdkKey: string): Promise<void>;
   /**
-   * Remove an existing target app from an SDK key
-   * @param sdkKey SDK key to clear any target app previously assigned
+   * Remove existing target apps from an SDK key
+   * @param targetApps Names of target apps to remove
+   * @param sdkKey SDK key to remove the target app from
    */
-  clearTargetAppFromSDKKey(sdkKey: string): Promise<void>;
-
+  removeTargetAppsFromSDKKey(targetApps: string[], sdkKey: string): Promise<void>;
+  /**
+   * Remove all existing target apps from an SDK key
+   * @param sdkKey SDK key to clear any target apps previously assigned
+   */
+  clearTargetAppsFromSDKKey(sdkKey: string): Promise<void>;
   /**
    * Register an SDK key as a valid key.
    * Only registered keys will be allowed to fetch config specs

@@ -6,9 +6,10 @@ import { Experiment } from "../types/Experiment";
 import { FeatureGate } from "../types/FeatureGate";
 import { MutationType } from "../types/MutationType";
 import { TargetAppNames } from "../types/TargetAppNames";
+import { filterNulls } from "./filterNulls";
 import StorageUtils, {
   GLOBAL_ASSOC_KEY,
-  StorageKeyType,
+  Assoc,
   SupportedAPIEntityType,
 } from "./StorageUtils";
 
@@ -120,7 +121,7 @@ export default class StorageHandler {
     entities: EntityNames
   ): Promise<void> {
     await this.storage.set(
-      StorageUtils.getStorageKey(StorageKeyType.EntityNames, name),
+      StorageUtils.getStorageKey(Assoc.TARGET_APP_TO_ENTITY_NAMES, name),
       StorageUtils.serializeSets(entities)
     );
     await this.updateTargetAppNames(new Set([name]), MutationType.Add);
@@ -131,14 +132,14 @@ export default class StorageHandler {
     entities: EntityNames
   ): Promise<void> {
     await this.storage.set(
-      StorageUtils.getStorageKey(StorageKeyType.EntityNames, name),
+      StorageUtils.getStorageKey(Assoc.TARGET_APP_TO_ENTITY_NAMES, name),
       StorageUtils.serializeSets(entities)
     );
   }
 
   public async removeTargetApp(name: string): Promise<void> {
     await this.storage.delete(
-      StorageUtils.getStorageKey(StorageKeyType.EntityNames, name)
+      StorageUtils.getStorageKey(Assoc.TARGET_APP_TO_ENTITY_NAMES, name)
     );
     await this.updateTargetAppNames(new Set([name]), MutationType.Remove);
   }
@@ -157,31 +158,105 @@ export default class StorageHandler {
     await this.updateEntityAssocs(entities, MutationType.Remove, targetApp);
   }
 
-  public async getTargetAppFromSDKKey(sdkKey: string): Promise<string | null> {
-    return await this.storage.get(
-      StorageUtils.getStorageKey(StorageKeyType.TargetAppAssignment, sdkKey)
+  public async getSDKKeysForTargetApp(
+    targetApp: string
+  ): Promise<Set<string> | null> {
+    const sdkKeys = await this.storage.get(
+      StorageUtils.getStorageKey(Assoc.TARGET_APP_TO_SDK_KEYS, targetApp)
     );
+    return sdkKeys ? StorageUtils.deserializeSets<Set<string>>(sdkKeys) : null;
   }
 
-  public async assignTargetAppToSDKKey(
+  public async getTargetAppsFromSDKKey(
+    sdkKey: string
+  ): Promise<TargetAppNames | null> {
+    const targetApps = await this.storage.get(
+      StorageUtils.getStorageKey(Assoc.SDK_KEY_TO_TARGET_APPS, sdkKey)
+    );
+    return targetApps
+      ? StorageUtils.deserializeSets<TargetAppNames>(targetApps)
+      : null;
+  }
+
+  private async addSDKKeyToTargetApp(
     targetApp: string,
     sdkKey: string
   ): Promise<void> {
-    await this.storage.set(
-      StorageUtils.getStorageKey(StorageKeyType.TargetAppAssignment, sdkKey),
-      targetApp
+    const existing =
+      (await this.getSDKKeysForTargetApp(targetApp)) ?? new Set([]);
+    await this.updateSet(existing, new Set(sdkKey), MutationType.Add);
+    return this.storage.set(
+      StorageUtils.getStorageKey(Assoc.TARGET_APP_TO_SDK_KEYS, targetApp),
+      StorageUtils.serializeSets(existing)
     );
   }
 
-  public async clearTargetAppFromSDKKey(sdkKey: string): Promise<void> {
-    await this.storage.delete(
-      StorageUtils.getStorageKey(StorageKeyType.TargetAppAssignment, sdkKey)
+  public async assignTargetAppsToSDKKey(
+    targetApps: string[],
+    sdkKey: string
+  ): Promise<void> {
+    const existing =
+      (await this.getTargetAppsFromSDKKey(sdkKey)) ?? new Set([]);
+    await this.updateSet(existing, new Set(targetApps), MutationType.Add);
+    await this.storage.set(
+      StorageUtils.getStorageKey(Assoc.SDK_KEY_TO_TARGET_APPS, sdkKey),
+      StorageUtils.serializeSets(existing)
     );
+    await Promise.all(
+      targetApps.map(async (targetApp) =>
+        this.addSDKKeyToTargetApp(targetApp, sdkKey)
+      )
+    );
+  }
+
+  private async removeSDKKeyFromTargetApp(
+    targetApp: string,
+    sdkKey: string
+  ): Promise<void> {
+    const existing =
+      (await this.getSDKKeysForTargetApp(targetApp)) ?? new Set([]);
+    await this.updateSet(existing, new Set(sdkKey), MutationType.Add);
+    return this.storage.set(
+      StorageUtils.getStorageKey(Assoc.TARGET_APP_TO_SDK_KEYS, targetApp),
+      StorageUtils.serializeSets(existing)
+    );
+  }
+
+  public async removeTargetAppsFromSDKKey(
+    targetApps: string[],
+    sdkKey: string
+  ): Promise<void> {
+    const existing =
+      (await this.getTargetAppsFromSDKKey(sdkKey)) ?? new Set([]);
+    await this.updateSet(existing, new Set(targetApps), MutationType.Remove);
+    await this.storage.set(
+      StorageUtils.getStorageKey(Assoc.SDK_KEY_TO_TARGET_APPS, sdkKey),
+      StorageUtils.serializeSets(existing)
+    );
+    await Promise.all(
+      targetApps.map(async (targetApp) =>
+        this.removeSDKKeyFromTargetApp(targetApp, sdkKey)
+      )
+    );
+  }
+
+  public async clearTargetAppsFromSDKKey(sdkKey: string): Promise<void> {
+    const existing = await this.getTargetAppsFromSDKKey(sdkKey);
+    await this.storage.delete(
+      StorageUtils.getStorageKey(Assoc.SDK_KEY_TO_TARGET_APPS, sdkKey)
+    );
+    if (existing) {
+      await Promise.all(
+        Array.from(existing).map(async (targetApp) =>
+          this.removeSDKKeyFromTargetApp(targetApp, sdkKey)
+        )
+      );
+    }
   }
 
   public async addSDKKey(sdkKey: string): Promise<void> {
     await this.storage.set(
-      StorageUtils.getStorageKey(StorageKeyType.SDKKey, sdkKey),
+      StorageUtils.getStorageKey(Assoc.SDK_KEY, sdkKey),
       "registered"
     );
     await this.updateRegisteredSDKKeys(new Set([sdkKey]), MutationType.Add);
@@ -189,7 +264,7 @@ export default class StorageHandler {
 
   public async removeSDKKey(sdkKey: string): Promise<void> {
     await this.storage.delete(
-      StorageUtils.getStorageKey(StorageKeyType.SDKKey, sdkKey)
+      StorageUtils.getStorageKey(Assoc.SDK_KEY, sdkKey)
     );
     await this.updateRegisteredSDKKeys(new Set([sdkKey]), MutationType.Remove);
   }
@@ -199,7 +274,7 @@ export default class StorageHandler {
   ): Promise<EntityNames | null> {
     const existing = await this.storage.get(
       StorageUtils.getStorageKey(
-        StorageKeyType.EntityNames,
+        Assoc.TARGET_APP_TO_ENTITY_NAMES,
         targetApp ?? GLOBAL_ASSOC_KEY
       )
     );
@@ -208,9 +283,29 @@ export default class StorageHandler {
       : null;
   }
 
+  public async getEntityAssocsForMultipleTargetApps(
+    targetApps?: TargetAppNames | null
+  ): Promise<EntityNames | null> {
+    const assocs = filterNulls(
+      await Promise.all(
+        Array.from(targetApps ?? [GLOBAL_ASSOC_KEY]).map((targetApp) =>
+          this.getEntityAssocs(targetApp)
+        )
+      )
+    );
+
+    return {
+      gates: StorageUtils.mergeSets(assocs.map((assoc) => assoc.gates)),
+      configs: StorageUtils.mergeSets(assocs.map((assoc) => assoc.configs)),
+      experiments: StorageUtils.mergeSets(
+        assocs.map((assoc) => assoc.experiments)
+      ),
+    };
+  }
+
   public async getTargetAppNames(): Promise<TargetAppNames> {
     const serialized = await this.storage.get(
-      StorageUtils.getStorageKey(StorageKeyType.TargetAppNames)
+      StorageUtils.getStorageKey(Assoc.TARGET_APPS)
     );
     return serialized
       ? StorageUtils.deserializeSets<TargetAppNames>(serialized)
@@ -250,7 +345,7 @@ export default class StorageHandler {
 
     await this.storage.set(
       StorageUtils.getStorageKey(
-        StorageKeyType.EntityNames,
+        Assoc.TARGET_APP_TO_ENTITY_NAMES,
         targetApp ?? GLOBAL_ASSOC_KEY
       ),
       StorageUtils.serializeSets(existing)
@@ -262,10 +357,7 @@ export default class StorageHandler {
     type: SupportedAPIEntityType
   ): Promise<T | null> {
     const value = await this.storage.get(
-      StorageUtils.getStorageKey(
-        StorageUtils.getStorageKeyTypeForEntityType(type),
-        name
-      )
+      StorageUtils.getStorageKey(StorageUtils.getAssocForEntityType(type), name)
     );
     return value ? StorageUtils.deserialize<T>(value) : null;
   }
@@ -278,7 +370,7 @@ export default class StorageHandler {
   ): Promise<void> {
     await this.storage.set(
       StorageUtils.getStorageKey(
-        StorageUtils.getStorageKeyTypeForEntityType(type),
+        StorageUtils.getAssocForEntityType(type),
         name
       ),
       StorageUtils.serialize(entity)
@@ -307,7 +399,7 @@ export default class StorageHandler {
   ): Promise<void> {
     await this.storage.set(
       StorageUtils.getStorageKey(
-        StorageUtils.getStorageKeyTypeForEntityType(type),
+        StorageUtils.getAssocForEntityType(type),
         name
       ),
       StorageUtils.serialize(entity)
@@ -333,10 +425,7 @@ export default class StorageHandler {
     type: SupportedAPIEntityType
   ): Promise<void> {
     await this.storage.delete(
-      StorageUtils.getStorageKey(
-        StorageUtils.getStorageKeyTypeForEntityType(type),
-        name
-      )
+      StorageUtils.getStorageKey(StorageUtils.getAssocForEntityType(type), name)
     );
     const entityNames = {
       [StorageUtils.getEntityGroupKeyForEntityType(type)]: new Set([name]),
@@ -358,14 +447,14 @@ export default class StorageHandler {
     await this.updateSet(existing, targetApps, mutation);
 
     await this.storage.set(
-      StorageUtils.getStorageKey(StorageKeyType.TargetAppNames),
+      StorageUtils.getStorageKey(Assoc.TARGET_APPS),
       StorageUtils.serializeSets(existing)
     );
   }
 
   public async getRegisteredSDKKeys(): Promise<Set<string>> {
     const serialized = await this.storage.get(
-      StorageUtils.getStorageKey(StorageKeyType.SDKKeys)
+      StorageUtils.getStorageKey(Assoc.SDK_KEYS)
     );
     return serialized
       ? StorageUtils.deserializeSets<Set<string>>(serialized)
@@ -380,7 +469,7 @@ export default class StorageHandler {
     await this.updateSet(existing, sdkKeys, mutation);
 
     await this.storage.set(
-      StorageUtils.getStorageKey(StorageKeyType.SDKKeys),
+      StorageUtils.getStorageKey(Assoc.SDK_KEYS),
       StorageUtils.serializeSets(existing)
     );
   }
