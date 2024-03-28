@@ -13,23 +13,31 @@ describe("Target Apps", () => {
   afterEach(async () => {
     storage.clearAll();
     await statsig.clearCache();
-  })
+  });
 
   it("Intialize with target app", async () => {
     await statsig.createGate("gate_1", {
       enabled: true,
-      targetApps: ["serverApp"],
+      targetApps: ["serverApp1"],
     });
     await statsig.createGate("gate_2", {
       enabled: true,
+      targetApps: ["serverApp2"],
+    });
+    await statsig.createGate("gate_3", {
+      enabled: true,
     });
     await statsig.registerSDKKey("server-key");
-    await statsig.assignTargetAppToSDKKey("serverApp", "server-key");
-    const configSpecs = await statsig.getConfigSpecs("server-key");
-    expect(configSpecs.feature_gates).toHaveLength(1);
-    expect(configSpecs.feature_gates).toContainEqual(
-      expect.objectContaining({ name: "gate_1" })
+    await statsig.assignTargetAppsToSDKKey(
+      ["serverApp1", "serverApp2"],
+      "server-key"
     );
+    const configSpecs = await statsig.getConfigSpecs("server-key");
+    expect(configSpecs.feature_gates).toHaveLength(2);
+    expect(configSpecs.feature_gates).toEqual([
+      expect.objectContaining({ name: "gate_1" }),
+      expect.objectContaining({ name: "gate_2" }),
+    ]);
   });
 
   it("Hashed keys to entities", async () => {
@@ -72,7 +80,7 @@ describe("Target Apps", () => {
     });
     await statsig.registerSDKKey("server-key");
     await statsig.registerSDKKey("client-key");
-    await statsig.assignTargetAppToSDKKey("clientApp", "client-key");
+    await statsig.assignTargetAppsToSDKKey(["clientApp"], "client-key");
     const configSpecs = await statsig.getConfigSpecs("server-key");
     const hashedClientKey = HashUtils.hashString("client-key");
     expect(configSpecs.hashed_sdk_keys_to_entities).toEqual({
@@ -95,7 +103,7 @@ describe("Target Apps", () => {
       experiments: new Set(["exp_2"]),
     });
     const targetAppNames = await statsig.getTargetAppNames();
-    expect(targetAppNames).toEqual(new Set(["serverApp", "clientApp"]))
+    expect(targetAppNames).toEqual(new Set(["serverApp", "clientApp"]));
   });
 
   it("Get list of Target Apps after deletion", async () => {
@@ -106,6 +114,6 @@ describe("Target Apps", () => {
     });
     await statsig.deleteTargetApp("serverApp");
     const targetAppNames = await statsig.getTargetAppNames();
-    expect(targetAppNames).toEqual(new Set())
+    expect(targetAppNames).toEqual(new Set());
   });
 });

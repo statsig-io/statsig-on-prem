@@ -7,15 +7,16 @@ import HashUtils from "./HashUtils";
 import { APIEntityType, ConfigSpecs } from "../types/ConfigSpecs";
 import { TargetAppNames } from "../types/TargetAppNames";
 
-export enum StorageKeyType {
-  FeatureGate,
-  DynamicConfig,
-  Experiment,
-  EntityNames,
-  TargetAppNames,
-  TargetAppAssignment,
-  SDKKey,
-  SDKKeys,
+export enum Assoc {
+  FEATURE_GATE,
+  DYNAMIC_CONFIG,
+  EXPERIMENT,
+  TARGET_APPS,
+  TARGET_APP_TO_ENTITY_NAMES,
+  SDK_KEY_TO_TARGET_APPS,
+  TARGET_APP_TO_SDK_KEYS,
+  SDK_KEY,
+  SDK_KEYS,
 }
 
 export type SupportedAPIEntityType = Exclude<
@@ -28,42 +29,42 @@ const GLOBAL_PREFIX = "statsig";
 export const GLOBAL_ASSOC_KEY = "";
 
 export default class StorageUtils {
-  public static getStorageKey(type: StorageKeyType, id?: string): string {
+  public static getStorageKey(type: Assoc, id?: string): string {
     const hashedID = id ? HashUtils.hashString(id) : "";
     switch (type) {
-      case StorageKeyType.FeatureGate:
+      case Assoc.FEATURE_GATE:
         return `${GLOBAL_PREFIX}:gate:${hashedID}`;
-      case StorageKeyType.DynamicConfig:
+      case Assoc.DYNAMIC_CONFIG:
         return `${GLOBAL_PREFIX}:config:${hashedID}`;
-      case StorageKeyType.Experiment:
+      case Assoc.EXPERIMENT:
         return `${GLOBAL_PREFIX}:experiment:${hashedID}`;
-      case StorageKeyType.EntityNames:
+      case Assoc.TARGET_APP_TO_ENTITY_NAMES:
         return `${GLOBAL_PREFIX}:entities:${hashedID}`;
-      case StorageKeyType.TargetAppNames:
+      case Assoc.TARGET_APPS:
         return `${GLOBAL_PREFIX}:targetApps`;
-      case StorageKeyType.TargetAppAssignment:
-        return `${GLOBAL_PREFIX}:${hashedID}:targetApp`;
-      case StorageKeyType.SDKKey:
+      case Assoc.SDK_KEY_TO_TARGET_APPS:
+        return `${GLOBAL_PREFIX}:${hashedID}:targetApps`;
+      case Assoc.TARGET_APP_TO_SDK_KEYS:
+        return `${GLOBAL_PREFIX}:${hashedID}:sdkKeys`;
+      case Assoc.SDK_KEY:
         return `${GLOBAL_PREFIX}:sdkKey:${hashedID}`;
-      case StorageKeyType.SDKKeys:
+      case Assoc.SDK_KEYS:
         return `${GLOBAL_PREFIX}:sdkKeys`;
       default:
         throw new ExhaustSwitchError(type);
     }
   }
 
-  public static getStorageKeyTypeForEntityType(
-    type: SupportedAPIEntityType
-  ): StorageKeyType {
+  public static getAssocForEntityType(type: SupportedAPIEntityType): Assoc {
     switch (type) {
       case APIEntityType.FEATURE_GATE:
       case APIEntityType.HOLDOUT:
-        return StorageKeyType.FeatureGate;
+        return Assoc.FEATURE_GATE;
       case APIEntityType.DYNAMIC_CONFIG:
-        return StorageKeyType.DynamicConfig;
+        return Assoc.DYNAMIC_CONFIG;
       case APIEntityType.EXPERIMENT:
       case APIEntityType.AUTOTUNE:
-        return StorageKeyType.Experiment;
+        return Assoc.EXPERIMENT;
       default:
         throw new ExhaustSwitchError(type);
     }
@@ -124,5 +125,12 @@ export default class StorageUtils {
     value: string
   ): T {
     return this.deserialize<T>(value, true);
+  }
+
+  public static mergeSets<T>(sets: Set<T>[]): Set<T> {
+    let initialValue: T[] = [];
+    return new Set(
+      sets.reduce((acc, set) => [...acc, ...Array.from(set)], initialValue)
+    );
   }
 }
