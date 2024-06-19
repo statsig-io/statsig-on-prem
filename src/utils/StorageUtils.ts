@@ -1,11 +1,7 @@
-import { DynamicConfig } from "../types/DynamicConfig";
-import { Experiment } from "../types/Experiment";
-import { FeatureGate } from "../types/FeatureGate";
 import { EntityNames } from "../types/EntityNames";
 import { ExhaustSwitchError } from "../Errors";
 import HashUtils from "./HashUtils";
-import { APIEntityType, ConfigSpecs } from "../types/ConfigSpecs";
-import { TargetAppNames } from "../types/TargetAppNames";
+import { APIEntityType } from "../types/ConfigSpecs";
 
 export enum Assoc {
   FEATURE_GATE,
@@ -30,7 +26,7 @@ export const GLOBAL_ASSOC_KEY = "";
 
 export default class StorageUtils {
   public static getStorageKey(type: Assoc, id?: string): string {
-    const hashedID = id ? HashUtils.hashString(id) : "";
+    const hashedID = id ? HashUtils.hashString(id) : GLOBAL_ASSOC_KEY;
     switch (type) {
       case Assoc.FEATURE_GATE:
         return `${GLOBAL_PREFIX}:gate:${hashedID}`;
@@ -87,44 +83,18 @@ export default class StorageUtils {
     }
   }
 
-  public static serialize<
-    T extends
-      | FeatureGate
-      | Experiment
-      | DynamicConfig
-      | EntityNames
-      | ConfigSpecs
-      | TargetAppNames
-  >(object: T, replaceSets = false): string {
+  public static serialize(object: object): string {
     return JSON.stringify(object, (_key, value) =>
-      value instanceof Set && replaceSets ? Array.from(value) : value
+      value instanceof Set
+        ? { dataType: "Set", value: Array.from(value) }
+        : value
     );
   }
 
-  public static serializeSets<T extends EntityNames | TargetAppNames>(
-    object: T
-  ): string {
-    return this.serialize<T>(object, true);
-  }
-
-  public static deserialize<
-    T extends
-      | FeatureGate
-      | Experiment
-      | DynamicConfig
-      | EntityNames
-      | ConfigSpecs
-      | TargetAppNames
-  >(value: string, reviveSets = false): T {
+  public static deserialize<T extends object>(value: string): T {
     return JSON.parse(value, (_key, value) =>
-      value instanceof Array && reviveSets ? new Set(value) : value
+      value && value.dataType === "Set" ? new Set(value.value) : value
     ) as T;
-  }
-
-  public static deserializeSets<T extends EntityNames | TargetAppNames>(
-    value: string
-  ): T {
-    return this.deserialize<T>(value, true);
   }
 
   public static mergeSets<T>(sets: Set<T>[]): Set<T> {

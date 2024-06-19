@@ -9,9 +9,14 @@ describe("Feature Gate", () => {
   const statsig = new StatsigOnPrem(storage);
   const sdkKey = "secret-key";
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     await statsig.initialize();
     await statsig.registerSDKKey(sdkKey);
+  });
+
+  afterEach(async () => {
+    storage.clearAll();
+    await statsig.clearCache();
   });
 
   it("Create Gate", async () => {
@@ -27,6 +32,7 @@ describe("Feature Gate", () => {
   });
 
   it("Update Gate", async () => {
+    await statsig.createGate("test-gate", { enabled: true });
     await statsig.updateGate("test-gate", { enabled: false });
     const configSpecs = await statsig.getConfigSpecs(sdkKey);
     await StatsigSDK.initialize("secret-key", {
@@ -39,6 +45,7 @@ describe("Feature Gate", () => {
   });
 
   it("Delete Gate", async () => {
+    await statsig.createGate("test-gate", { enabled: true });
     await statsig.deleteGate("test-gate");
     const configSpecs = await statsig.getConfigSpecs(sdkKey);
     await StatsigSDK.initialize("secret-key", {
@@ -53,5 +60,19 @@ describe("Feature Gate", () => {
     expect(evaluation.value).toEqual(false);
     expect(evaluation.evaluation_details?.reason).toEqual("Unrecognized");
     StatsigSDK.shutdown();
+  });
+
+  it("Target apps", async () => {
+    await statsig.createGate("test-gate", { enabled: true });
+    let gate = await statsig.getGate("test-gate");
+    expect(gate?.targetApps).toEqual(new Set([]));
+
+    await statsig.addTargetAppsToGate("test-gate", ["target-app-1"]);
+    gate = await statsig.getGate("test-gate");
+    expect(gate?.targetApps).toEqual(new Set(["target-app-1"]));
+
+    await statsig.removeTargetAppsFromGate("test-gate", ["target-app-1"]);
+    gate = await statsig.getGate("test-gate");
+    expect(gate?.targetApps).toEqual(new Set());
   });
 });

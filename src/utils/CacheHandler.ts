@@ -15,9 +15,13 @@ export default class CacheHandler {
     return await this.cache.get(cacheKey);
   }
 
-  public async clear(sdkKey: string) {
-    const cacheKey = CacheUtils.getCacheKey(sdkKey);
-    await this.cache.clear(cacheKey);
+  public async clear(...sdkKeys: string[]) {
+    await Promise.all(
+      sdkKeys.map((sdkKey) => {
+        const cacheKey = CacheUtils.getCacheKey(sdkKey);
+        return this.cache.clear(cacheKey);
+      })
+    );
   }
 
   public async clearAll(): Promise<void> {
