@@ -1,9 +1,9 @@
 import { StorageInterface } from "../interfaces/StorageInterface";
 import { APIEntityType } from "../types/ConfigSpecs";
-import { DynamicConfig } from "../types/DynamicConfig";
+import { DynamicConfig, DynamicConfigUpdateArgs } from "../types/DynamicConfig";
 import { EntityNames } from "../types/EntityNames";
-import { Experiment } from "../types/Experiment";
-import { FeatureGate } from "../types/FeatureGate";
+import { Experiment, ExperimentUpdateArgs } from "../types/Experiment";
+import { FeatureGate, FeatureGateUpdateArgs } from "../types/FeatureGate";
 import { MutationType } from "../types/MutationType";
 import { TargetAppNames } from "../types/TargetAppNames";
 import { filterNulls } from "./filterNulls";
@@ -28,102 +28,167 @@ export default class StorageHandler {
     return await this.getEntity(name, APIEntityType.FEATURE_GATE);
   }
 
-  public async addGate(
-    name: string,
-    gate: FeatureGate,
-    targetApps?: string[]
-  ): Promise<void> {
-    await this.addEntity(name, gate, APIEntityType.FEATURE_GATE, targetApps);
+  public async addGate(gate: FeatureGate): Promise<void> {
+    await this.addEntity(gate, APIEntityType.FEATURE_GATE);
   }
 
   public async updateGate(
-    name: string,
     gate: FeatureGate,
-    targetApps?: string[]
+    args: FeatureGateUpdateArgs
   ): Promise<void> {
-    await this.updateEntity(name, gate, APIEntityType.FEATURE_GATE, targetApps);
+    const { targetApps, ...changes } = args;
+    let updated: FeatureGate = { ...gate, ...changes };
+    if (targetApps) {
+      await this.updateGateTargetApps(
+        updated,
+        new Set(targetApps),
+        MutationType.Replace
+      );
+    }
+    await this.updateEntity(updated, APIEntityType.FEATURE_GATE);
   }
 
   public async removeGate(name: string): Promise<void> {
     await this.removeEntity(name, APIEntityType.FEATURE_GATE);
   }
 
+  public async addTargetAppsToGate(
+    gate: FeatureGate,
+    targetApps: string[]
+  ): Promise<void> {
+    await this.updateGateTargetApps(
+      gate,
+      new Set(targetApps),
+      MutationType.Add
+    );
+    await this.updateEntity(gate, APIEntityType.FEATURE_GATE);
+  }
+
+  public async removeTargetAppsFromGate(
+    gate: FeatureGate,
+    targetApps: string[]
+  ): Promise<void> {
+    await this.updateGateTargetApps(
+      gate,
+      new Set(targetApps),
+      MutationType.Remove
+    );
+    await this.updateEntity(gate, APIEntityType.FEATURE_GATE);
+  }
+
   public async getConfig(name: string): Promise<DynamicConfig | null> {
     return await this.getEntity(name, APIEntityType.DYNAMIC_CONFIG);
   }
 
-  public async addConfig(
-    name: string,
-    config: DynamicConfig,
-    targetApps?: string[]
-  ): Promise<void> {
-    await this.addEntity(
-      name,
-      config,
-      APIEntityType.DYNAMIC_CONFIG,
-      targetApps
-    );
+  public async addConfig(config: DynamicConfig): Promise<void> {
+    await this.addEntity(config, APIEntityType.DYNAMIC_CONFIG);
   }
 
   public async updateConfig(
-    name: string,
     config: DynamicConfig,
-    targetApps?: string[]
+    args: DynamicConfigUpdateArgs
   ): Promise<void> {
-    await this.updateEntity(
-      name,
-      config,
-      APIEntityType.DYNAMIC_CONFIG,
-      targetApps
-    );
+    const { targetApps, ...changes } = args;
+    let updated: DynamicConfig = { ...config, ...changes };
+    if (targetApps) {
+      await this.updateConfigTargetApps(
+        updated,
+        new Set(targetApps),
+        MutationType.Replace
+      );
+    }
+    await this.updateEntity(updated, APIEntityType.DYNAMIC_CONFIG);
   }
 
   public async removeConfig(name: string): Promise<void> {
     await this.removeEntity(name, APIEntityType.DYNAMIC_CONFIG);
   }
 
+  public async addTargetAppsToConfig(
+    config: DynamicConfig,
+    targetApps: string[]
+  ): Promise<void> {
+    await this.updateConfigTargetApps(
+      config,
+      new Set(targetApps),
+      MutationType.Add
+    );
+    await this.updateEntity(config, APIEntityType.DYNAMIC_CONFIG);
+  }
+
+  public async removeTargetAppsFromConfig(
+    config: DynamicConfig,
+    targetApps: string[]
+  ): Promise<void> {
+    await this.updateConfigTargetApps(
+      config,
+      new Set(targetApps),
+      MutationType.Remove
+    );
+    await this.updateEntity(config, APIEntityType.DYNAMIC_CONFIG);
+  }
+
   public async getExperiment(name: string): Promise<Experiment | null> {
     return await this.getEntity(name, APIEntityType.EXPERIMENT);
   }
 
-  public async addExperiment(
-    name: string,
-    experiment: Experiment,
-    targetApps?: string[]
-  ): Promise<void> {
-    await this.addEntity(
-      name,
-      experiment,
-      APIEntityType.EXPERIMENT,
-      targetApps
-    );
+  public async addExperiment(experiment: Experiment): Promise<void> {
+    await this.addEntity(experiment, APIEntityType.EXPERIMENT);
   }
 
   public async updateExperiment(
-    name: string,
     experiment: Experiment,
-    targetApps?: string[]
+    args: ExperimentUpdateArgs
   ): Promise<void> {
-    await this.updateEntity(
-      name,
-      experiment,
-      APIEntityType.EXPERIMENT,
-      targetApps
-    );
+    const { targetApps, ...changes } = args;
+    let updated: Experiment = { ...experiment, ...changes };
+    if (targetApps) {
+      await this.updateExperimentTargetApps(
+        updated,
+        new Set(targetApps),
+        MutationType.Replace
+      );
+    }
+    await this.updateEntity(updated, APIEntityType.EXPERIMENT);
   }
 
   public async removeExperiment(name: string): Promise<void> {
     await this.removeEntity(name, APIEntityType.EXPERIMENT);
   }
 
+  public async addTargetAppsToExperiment(
+    experiment: Experiment,
+    targetApps: string[]
+  ): Promise<void> {
+    await this.updateExperimentTargetApps(
+      experiment,
+      new Set(targetApps),
+      MutationType.Add
+    );
+    await this.updateEntity(experiment, APIEntityType.EXPERIMENT);
+  }
+
+  public async removeTargetAppsFromExperiment(
+    experiment: Experiment,
+    targetApps: string[]
+  ): Promise<void> {
+    await this.updateExperimentTargetApps(
+      experiment,
+      new Set(targetApps),
+      MutationType.Remove
+    );
+    await this.updateEntity(experiment, APIEntityType.EXPERIMENT);
+  }
+
   public async addTargetApp(
     name: string,
     entities: EntityNames
   ): Promise<void> {
-    await this.storage.set(
-      StorageUtils.getStorageKey(Assoc.TARGET_APP_TO_ENTITY_NAMES, name),
-      StorageUtils.serializeSets(entities)
-    );
+    await this.setAssoc({
+      assoc: Assoc.TARGET_APP_TO_ENTITY_NAMES,
+      source: name,
+      destination: entities,
+    });
     await this.updateTargetAppNames(new Set([name]), MutationType.Add);
   }
 
@@ -131,16 +196,18 @@ export default class StorageHandler {
     name: string,
     entities: EntityNames
   ): Promise<void> {
-    await this.storage.set(
-      StorageUtils.getStorageKey(Assoc.TARGET_APP_TO_ENTITY_NAMES, name),
-      StorageUtils.serializeSets(entities)
-    );
+    await this.setAssoc({
+      assoc: Assoc.TARGET_APP_TO_ENTITY_NAMES,
+      source: name,
+      destination: entities,
+    });
   }
 
   public async removeTargetApp(name: string): Promise<void> {
-    await this.storage.delete(
-      StorageUtils.getStorageKey(Assoc.TARGET_APP_TO_ENTITY_NAMES, name)
-    );
+    await this.deleteAssoc({
+      assoc: Assoc.TARGET_APP_TO_ENTITY_NAMES,
+      source: name,
+    });
     await this.updateTargetAppNames(new Set([name]), MutationType.Remove);
   }
 
@@ -161,21 +228,19 @@ export default class StorageHandler {
   public async getSDKKeysForTargetApp(
     targetApp: string
   ): Promise<Set<string> | null> {
-    const sdkKeys = await this.storage.get(
-      StorageUtils.getStorageKey(Assoc.TARGET_APP_TO_SDK_KEYS, targetApp)
-    );
-    return sdkKeys ? StorageUtils.deserializeSets<Set<string>>(sdkKeys) : null;
+    return await this.getAssoc<Set<string>>({
+      assoc: Assoc.TARGET_APP_TO_SDK_KEYS,
+      source: targetApp,
+    });
   }
 
   public async getTargetAppsFromSDKKey(
     sdkKey: string
   ): Promise<TargetAppNames | null> {
-    const targetApps = await this.storage.get(
-      StorageUtils.getStorageKey(Assoc.SDK_KEY_TO_TARGET_APPS, sdkKey)
-    );
-    return targetApps
-      ? StorageUtils.deserializeSets<TargetAppNames>(targetApps)
-      : null;
+    return await this.getAssoc<TargetAppNames>({
+      assoc: Assoc.SDK_KEY_TO_TARGET_APPS,
+      source: sdkKey,
+    });
   }
 
   private async addSDKKeyToTargetApp(
@@ -184,11 +249,16 @@ export default class StorageHandler {
   ): Promise<void> {
     const existing =
       (await this.getSDKKeysForTargetApp(targetApp)) ?? new Set([]);
-    await this.updateSet(existing, new Set(sdkKey), MutationType.Add);
-    return this.storage.set(
-      StorageUtils.getStorageKey(Assoc.TARGET_APP_TO_SDK_KEYS, targetApp),
-      StorageUtils.serializeSets(existing)
+    const updated = await this.updateSet(
+      existing,
+      new Set([sdkKey]),
+      MutationType.Add
     );
+    await this.setAssoc({
+      assoc: Assoc.TARGET_APP_TO_SDK_KEYS,
+      source: targetApp,
+      destination: updated,
+    });
   }
 
   public async assignTargetAppsToSDKKey(
@@ -197,11 +267,16 @@ export default class StorageHandler {
   ): Promise<void> {
     const existing =
       (await this.getTargetAppsFromSDKKey(sdkKey)) ?? new Set([]);
-    await this.updateSet(existing, new Set(targetApps), MutationType.Add);
-    await this.storage.set(
-      StorageUtils.getStorageKey(Assoc.SDK_KEY_TO_TARGET_APPS, sdkKey),
-      StorageUtils.serializeSets(existing)
+    const updated = await this.updateSet(
+      existing,
+      new Set(targetApps),
+      MutationType.Add
     );
+    await this.setAssoc({
+      assoc: Assoc.SDK_KEY_TO_TARGET_APPS,
+      source: sdkKey,
+      destination: updated,
+    });
     await Promise.all(
       targetApps.map(async (targetApp) =>
         this.addSDKKeyToTargetApp(targetApp, sdkKey)
@@ -215,11 +290,16 @@ export default class StorageHandler {
   ): Promise<void> {
     const existing =
       (await this.getSDKKeysForTargetApp(targetApp)) ?? new Set([]);
-    await this.updateSet(existing, new Set(sdkKey), MutationType.Add);
-    return this.storage.set(
-      StorageUtils.getStorageKey(Assoc.TARGET_APP_TO_SDK_KEYS, targetApp),
-      StorageUtils.serializeSets(existing)
+    const updated = await this.updateSet(
+      existing,
+      new Set([sdkKey]),
+      MutationType.Add
     );
+    await this.setAssoc({
+      assoc: Assoc.TARGET_APP_TO_SDK_KEYS,
+      source: targetApp,
+      destination: updated,
+    });
   }
 
   public async removeTargetAppsFromSDKKey(
@@ -228,11 +308,16 @@ export default class StorageHandler {
   ): Promise<void> {
     const existing =
       (await this.getTargetAppsFromSDKKey(sdkKey)) ?? new Set([]);
-    await this.updateSet(existing, new Set(targetApps), MutationType.Remove);
-    await this.storage.set(
-      StorageUtils.getStorageKey(Assoc.SDK_KEY_TO_TARGET_APPS, sdkKey),
-      StorageUtils.serializeSets(existing)
+    const updated = await this.updateSet(
+      existing,
+      new Set(targetApps),
+      MutationType.Remove
     );
+    await this.setAssoc({
+      assoc: Assoc.SDK_KEY_TO_TARGET_APPS,
+      source: sdkKey,
+      destination: updated,
+    });
     await Promise.all(
       targetApps.map(async (targetApp) =>
         this.removeSDKKeyFromTargetApp(targetApp, sdkKey)
@@ -241,13 +326,14 @@ export default class StorageHandler {
   }
 
   public async clearTargetAppsFromSDKKey(sdkKey: string): Promise<void> {
-    const existing = await this.getTargetAppsFromSDKKey(sdkKey);
-    await this.storage.delete(
-      StorageUtils.getStorageKey(Assoc.SDK_KEY_TO_TARGET_APPS, sdkKey)
-    );
-    if (existing) {
+    const targetApps = await this.getTargetAppsFromSDKKey(sdkKey);
+    await this.deleteAssoc({
+      assoc: Assoc.SDK_KEY_TO_TARGET_APPS,
+      source: sdkKey,
+    });
+    if (targetApps) {
       await Promise.all(
-        Array.from(existing).map(async (targetApp) =>
+        Array.from(targetApps).map(async (targetApp) =>
           this.removeSDKKeyFromTargetApp(targetApp, sdkKey)
         )
       );
@@ -255,32 +341,26 @@ export default class StorageHandler {
   }
 
   public async addSDKKey(sdkKey: string): Promise<void> {
-    await this.storage.set(
-      StorageUtils.getStorageKey(Assoc.SDK_KEY, sdkKey),
-      "registered"
-    );
+    await this.setAssoc({
+      assoc: Assoc.SDK_KEY,
+      source: sdkKey,
+      destination: "registered",
+    });
     await this.updateRegisteredSDKKeys(new Set([sdkKey]), MutationType.Add);
   }
 
   public async removeSDKKey(sdkKey: string): Promise<void> {
-    await this.storage.delete(
-      StorageUtils.getStorageKey(Assoc.SDK_KEY, sdkKey)
-    );
+    await this.deleteAssoc({ assoc: Assoc.SDK_KEY, source: sdkKey });
     await this.updateRegisteredSDKKeys(new Set([sdkKey]), MutationType.Remove);
   }
 
   public async getEntityAssocs(
     targetApp?: string
   ): Promise<EntityNames | null> {
-    const existing = await this.storage.get(
-      StorageUtils.getStorageKey(
-        Assoc.TARGET_APP_TO_ENTITY_NAMES,
-        targetApp ?? GLOBAL_ASSOC_KEY
-      )
-    );
-    return existing
-      ? StorageUtils.deserializeSets<EntityNames>(existing)
-      : null;
+    return await this.getAssoc<EntityNames>({
+      assoc: Assoc.TARGET_APP_TO_ENTITY_NAMES,
+      source: targetApp,
+    });
   }
 
   public async getEntityAssocsForMultipleTargetApps(
@@ -304,12 +384,11 @@ export default class StorageHandler {
   }
 
   public async getTargetAppNames(): Promise<TargetAppNames> {
-    const serialized = await this.storage.get(
-      StorageUtils.getStorageKey(Assoc.TARGET_APPS)
+    return (
+      (await this.getAssoc<TargetAppNames>({
+        assoc: Assoc.TARGET_APPS,
+      })) ?? new Set()
     );
-    return serialized
-      ? StorageUtils.deserializeSets<TargetAppNames>(serialized)
-      : new Set();
   }
 
   private async updateEntityAssocs(
@@ -322,111 +401,178 @@ export default class StorageHandler {
       experiments: new Set(),
       configs: new Set(),
     };
-    const operation = (set: Set<string>) => {
-      switch (mutation) {
-        case MutationType.Add:
-          return set.add;
-        case MutationType.Remove:
-          return set.delete;
-      }
-    };
     if (entities.gates) {
-      entities.gates.forEach(operation(existing.gates), existing.gates);
+      existing.gates = await this.updateSet(
+        existing.gates,
+        entities.gates,
+        mutation
+      );
     }
     if (entities.configs) {
-      entities.configs.forEach(operation(existing.configs), existing.configs);
+      existing.configs = await this.updateSet(
+        existing.configs,
+        entities.configs,
+        mutation
+      );
     }
     if (entities.experiments) {
-      entities.experiments?.forEach(
-        operation(existing.experiments),
-        existing.experiments
+      existing.experiments = await this.updateSet(
+        existing.experiments,
+        entities.experiments,
+        mutation
       );
     }
 
-    await this.storage.set(
-      StorageUtils.getStorageKey(
-        Assoc.TARGET_APP_TO_ENTITY_NAMES,
-        targetApp ?? GLOBAL_ASSOC_KEY
-      ),
-      StorageUtils.serializeSets(existing)
-    );
+    await this.setAssoc({
+      assoc: Assoc.TARGET_APP_TO_ENTITY_NAMES,
+      source: targetApp,
+      destination: existing,
+    });
   }
 
   private async getEntity<T extends FeatureGate | DynamicConfig | Experiment>(
     name: string,
     type: SupportedAPIEntityType
   ): Promise<T | null> {
-    const value = await this.storage.get(
-      StorageUtils.getStorageKey(StorageUtils.getAssocForEntityType(type), name)
-    );
-    return value ? StorageUtils.deserialize<T>(value) : null;
+    return await this.getAssoc<T>({
+      assoc: StorageUtils.getAssocForEntityType(type),
+      source: name,
+    });
   }
 
   private async addEntity<T extends FeatureGate | DynamicConfig | Experiment>(
-    name: string,
     entity: T,
-    type: SupportedAPIEntityType,
-    targetApps?: string[]
+    type: SupportedAPIEntityType
   ): Promise<void> {
-    await this.storage.set(
-      StorageUtils.getStorageKey(
-        StorageUtils.getAssocForEntityType(type),
-        name
-      ),
-      StorageUtils.serialize(entity)
-    );
+    await this.setAssoc({
+      assoc: StorageUtils.getAssocForEntityType(type),
+      source: entity.name,
+      destination: entity,
+    });
 
     const entityNames = {
-      [StorageUtils.getEntityGroupKeyForEntityType(type)]: new Set([name]),
+      [StorageUtils.getEntityGroupKeyForEntityType(type)]: new Set([
+        entity.name,
+      ]),
     };
     await this.addEntityAssocs(entityNames);
-    if (targetApps) {
+    if (entity.targetApps) {
       await Promise.all(
-        targetApps.map((targetApp) =>
+        Array.from(entity.targetApps).map((targetApp) =>
           this.addEntityAssocs(entityNames, targetApp)
         )
       );
     }
   }
 
-  private async updateEntity<
+  private async updateGateTargetApps(
+    gate: FeatureGate,
+    targetApps: TargetAppNames,
+    mutation: MutationType
+  ): Promise<void> {
+    await this.updateEntityTargetApps(
+      gate,
+      APIEntityType.FEATURE_GATE,
+      targetApps,
+      mutation
+    );
+  }
+
+  private async updateConfigTargetApps(
+    gate: FeatureGate,
+    targetApps: TargetAppNames,
+    mutation: MutationType
+  ): Promise<void> {
+    await this.updateEntityTargetApps(
+      gate,
+      APIEntityType.DYNAMIC_CONFIG,
+      targetApps,
+      mutation
+    );
+  }
+
+  private async updateExperimentTargetApps(
+    gate: FeatureGate,
+    targetApps: TargetAppNames,
+    mutation: MutationType
+  ): Promise<void> {
+    await this.updateEntityTargetApps(
+      gate,
+      APIEntityType.EXPERIMENT,
+      targetApps,
+      mutation
+    );
+  }
+
+  private async updateEntityTargetApps<
     T extends FeatureGate | DynamicConfig | Experiment
   >(
-    name: string,
     entity: T,
     type: SupportedAPIEntityType,
-    newTargetApps?: string[]
+    targetApps: TargetAppNames,
+    mutation: MutationType
   ): Promise<void> {
-    await this.storage.set(
-      StorageUtils.getStorageKey(
-        StorageUtils.getAssocForEntityType(type),
-        name
-      ),
-      StorageUtils.serialize(entity)
-    );
+    const entityNames = {
+      [StorageUtils.getEntityGroupKeyForEntityType(type)]: new Set([
+        entity.name,
+      ]),
+    };
 
-    if (newTargetApps) {
-      const entityNames = {
-        [StorageUtils.getEntityGroupKeyForEntityType(type)]: new Set([name]),
-      };
+    if (mutation === MutationType.Add) {
+      await Promise.all(
+        Array.from(targetApps).map((targetApp) =>
+          this.addEntityAssocs(entityNames, targetApp)
+        )
+      );
+      entity.targetApps = await this.updateSet(
+        entity.targetApps ?? new Set([]),
+        targetApps,
+        mutation
+      );
+    } else if (mutation === MutationType.Remove) {
+      await Promise.all(
+        Array.from(targetApps).map((targetApp) =>
+          this.removeEntityAssocs(entityNames, targetApp)
+        )
+      );
+      if (entity.targetApps !== undefined) {
+        entity.targetApps = await this.updateSet(
+          entity.targetApps,
+          targetApps,
+          mutation
+        );
+      }
+    } else {
       const allTargetApps = await this.getTargetAppNames();
       await Promise.all(
         Array.from(allTargetApps).map((targetApp) =>
-          newTargetApps.includes(targetApp)
+          Array.from(targetApps).includes(targetApp)
             ? this.addEntityAssocs(entityNames, targetApp)
             : this.removeEntityAssocs(entityNames, targetApp)
         )
       );
+      entity.targetApps = targetApps;
     }
+  }
+
+  private async updateEntity<
+    T extends FeatureGate | DynamicConfig | Experiment
+  >(entity: T, type: SupportedAPIEntityType): Promise<void> {
+    await this.setAssoc({
+      assoc: StorageUtils.getAssocForEntityType(type),
+      source: entity.name,
+      destination: entity,
+    });
   }
 
   private async removeEntity(
     name: string,
     type: SupportedAPIEntityType
   ): Promise<void> {
-    await this.storage.delete(
-      StorageUtils.getStorageKey(StorageUtils.getAssocForEntityType(type), name)
-    );
+    await this.deleteAssoc({
+      assoc: StorageUtils.getAssocForEntityType(type),
+      source: name,
+    });
     const entityNames = {
       [StorageUtils.getEntityGroupKeyForEntityType(type)]: new Set([name]),
     };
@@ -440,25 +586,18 @@ export default class StorageHandler {
   }
 
   private async updateTargetAppNames(
-    targetApps: Set<string>,
+    targetApps: TargetAppNames,
     mutation: MutationType
   ): Promise<void> {
     const existing = await this.getTargetAppNames();
-    await this.updateSet(existing, targetApps, mutation);
-
-    await this.storage.set(
-      StorageUtils.getStorageKey(Assoc.TARGET_APPS),
-      StorageUtils.serializeSets(existing)
-    );
+    const updated = await this.updateSet(existing, targetApps, mutation);
+    await this.setAssoc({ assoc: Assoc.TARGET_APPS, destination: updated });
   }
 
   public async getRegisteredSDKKeys(): Promise<Set<string>> {
-    const serialized = await this.storage.get(
-      StorageUtils.getStorageKey(Assoc.SDK_KEYS)
+    return (
+      (await this.getAssoc<Set<string>>({ assoc: Assoc.SDK_KEYS })) ?? new Set()
     );
-    return serialized
-      ? StorageUtils.deserializeSets<Set<string>>(serialized)
-      : new Set();
   }
 
   private async updateRegisteredSDKKeys(
@@ -466,20 +605,19 @@ export default class StorageHandler {
     mutation: MutationType
   ): Promise<void> {
     const existing = await this.getRegisteredSDKKeys();
-    await this.updateSet(existing, sdkKeys, mutation);
-
-    await this.storage.set(
-      StorageUtils.getStorageKey(Assoc.SDK_KEYS),
-      StorageUtils.serializeSets(existing)
-    );
+    const updated = await this.updateSet(existing, sdkKeys, mutation);
+    await this.setAssoc({ assoc: Assoc.SDK_KEYS, destination: updated });
   }
 
-  // Updates the existing set in-place
   private async updateSet<T>(
     existing: Set<T>,
     updating: Set<T>,
     mutation: MutationType
-  ): Promise<void> {
+  ): Promise<Set<T>> {
+    if (mutation === MutationType.Replace) {
+      return updating;
+    }
+    const cloned = new Set(existing);
     const operation = (set: Set<T>) => {
       switch (mutation) {
         case MutationType.Add:
@@ -488,6 +626,114 @@ export default class StorageHandler {
           return set.delete;
       }
     };
-    updating.forEach(operation(existing), existing);
+    updating.forEach(operation(cloned), cloned);
+    return cloned;
+  }
+
+  private async getAssoc<
+    T extends
+      | FeatureGate
+      | Experiment
+      | DynamicConfig
+      | EntityNames
+      | TargetAppNames
+  >(args: { assoc: Assoc; source?: string }): Promise<T | null> {
+    const { assoc, source } = args;
+    const val = await this.storage.get(
+      StorageUtils.getStorageKey(assoc, source)
+    );
+    return val ? StorageUtils.deserialize<T>(val) : null;
+  }
+
+  private async setAssoc(args: {
+    assoc: Assoc;
+    source?: string;
+    destination: object | string;
+  }): Promise<void> {
+    const { assoc, source, destination } = args;
+    await this.storage.set(
+      StorageUtils.getStorageKey(assoc, source),
+      typeof destination === "string"
+        ? destination
+        : StorageUtils.serialize(destination)
+    );
+  }
+
+  private async deleteAssoc(args: {
+    assoc: Assoc;
+    source?: string;
+  }): Promise<void> {
+    const { assoc, source } = args;
+    await this.storage.delete(StorageUtils.getStorageKey(assoc, source));
+  }
+
+  public async updateSerialization__V0_0_8_BETA(): Promise<void> {
+    await Promise.all(
+      [Assoc.SDK_KEYS, Assoc.TARGET_APPS].map(async (assoc) => {
+        const deserialized = await this.getAssoc__DEPRECATED({ assoc });
+        if (deserialized) {
+          await this.setAssoc({ assoc, destination: deserialized });
+        }
+      })
+    );
+
+    const targetApps = await this.getTargetAppNames();
+    await Promise.all(
+      [Assoc.TARGET_APP_TO_SDK_KEYS, Assoc.TARGET_APP_TO_ENTITY_NAMES].map(
+        async (assoc) => {
+          await Promise.all(
+            Array.from(targetApps).map(async (targetApp) => {
+              const deserialized = await this.getAssoc__DEPRECATED({
+                assoc,
+                source: targetApp,
+              });
+              if (deserialized) {
+                await this.setAssoc({
+                  assoc,
+                  source: targetApp,
+                  destination: deserialized,
+                });
+              }
+            })
+          );
+        }
+      )
+    );
+
+    const sdkKeys = await this.getRegisteredSDKKeys();
+    await Promise.all(
+      Array.from(sdkKeys).map(async (sdkKey) => {
+        const deserialized = await this.getAssoc__DEPRECATED({
+          assoc: Assoc.SDK_KEY_TO_TARGET_APPS,
+          source: sdkKey,
+        });
+        if (deserialized) {
+          await this.setAssoc({
+            assoc: Assoc.SDK_KEY_TO_TARGET_APPS,
+            source: sdkKey,
+            destination: deserialized,
+          });
+        }
+      })
+    );
+  }
+
+  private async getAssoc__DEPRECATED<
+    T extends
+      | FeatureGate
+      | Experiment
+      | DynamicConfig
+      | EntityNames
+      | TargetAppNames
+  >(args: { assoc: Assoc; source?: string }): Promise<T | null> {
+    const { assoc, source } = args;
+    const val = await this.storage.get(
+      StorageUtils.getStorageKey(assoc, source)
+    );
+    return val
+      ? JSON.parse(val, (_key, value) =>
+          value instanceof Array ? new Set(value) : value
+        )
+      : null;
   }
 }

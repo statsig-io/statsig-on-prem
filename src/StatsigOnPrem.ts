@@ -38,8 +38,34 @@ export default class StatsigOnPrem implements StatsigInterface {
     await this.store.shutdown();
   }
 
-  public async clearCache(): Promise<void> {
-    await this.cache.clearAll();
+  public async clearCache(sdkKey?: string): Promise<void> {
+    if (sdkKey) {
+      await this.cache.clear(sdkKey);
+    } else {
+      await this.cache.clearAll();
+    }
+  }
+
+  public async clearCacheForTargetApp(...targetApps: string[]): Promise<void> {
+    await Promise.all(
+      targetApps.map(async (targetApp) => {
+        const sdkKeys = await this.store.getSDKKeysForTargetApp(targetApp);
+        if (sdkKeys) {
+          await this.cache.clear(...Array.from(sdkKeys));
+        }
+      })
+    );
+  }
+
+  public async clearCacheForEntity(
+    entity: FeatureGate | Experiment | DynamicConfig
+  ): Promise<void> {
+    const targetApps = entity.targetApps;
+    if (targetApps == null) {
+      await this.cache.clearAll();
+    } else {
+      await this.clearCacheForTargetApp(...Array.from(targetApps));
+    }
   }
 
   public async getConfigSpecs(sdkKey: string): Promise<ConfigSpecs> {
@@ -150,30 +176,61 @@ export default class StatsigOnPrem implements StatsigInterface {
       name,
       salt: IDUtils.generateNewSalt(),
       idType: idType ?? "userID",
+      targetApps: new Set(targetApps ?? []),
       ...metadata,
     };
-    await this.store.addGate(name, gate, targetApps);
-    await this.cache.clearAll();
+    await this.store.addGate(gate);
+    await this.clearCacheForEntity(gate);
   }
 
   public async updateGate(
     name: string,
     args: Partial<FeatureGateCreationArgs>
   ): Promise<void> {
-    const { targetApps, ...metadata } = args;
-    const existing = await this.getGate(name);
-    if (existing == null) {
+    const gate = await this.getGate(name);
+    if (gate == null) {
       console.warn("Attempting to update non-existent gate");
       return;
     }
-    const updatedGate: FeatureGate = { ...existing, ...metadata };
-    await this.store.updateGate(name, updatedGate, targetApps);
-    await this.cache.clearAll();
+    await this.clearCacheForEntity(gate);
+    await this.store.updateGate(gate, args);
+    await this.clearCacheForEntity(gate);
   }
 
   public async deleteGate(name: string): Promise<void> {
+    const gate = await this.store.getGate(name);
+    if (!gate) {
+      console.warn("Attempting to delete non-existent gate");
+      return;
+    }
     await this.store.removeGate(name);
-    await this.cache.clearAll();
+    await this.clearCacheForEntity(gate);
+  }
+
+  public async addTargetAppsToGate(
+    name: string,
+    targetApps: string[]
+  ): Promise<void> {
+    const gate = await this.getGate(name);
+    if (gate == null) {
+      console.warn("Attempting to update non-existent gate");
+      return;
+    }
+    await this.store.addTargetAppsToGate(gate, targetApps);
+    await this.clearCacheForTargetApp(...targetApps);
+  }
+
+  public async removeTargetAppsFromGate(
+    name: string,
+    targetApps: string[]
+  ): Promise<void> {
+    const gate = await this.getGate(name);
+    if (gate == null) {
+      console.warn("Attempting to update non-existent gate");
+      return;
+    }
+    await this.store.removeTargetAppsFromGate(gate, targetApps);
+    await this.clearCacheForTargetApp(...targetApps);
   }
 
   /* Experiment */
@@ -191,53 +248,83 @@ export default class StatsigOnPrem implements StatsigInterface {
       name,
       salt: IDUtils.generateNewSalt(),
       idType: idType ?? "userID",
+      targetApps: new Set(targetApps ?? []),
       ...metadata,
     };
-    await this.store.addExperiment(name, experiment, targetApps);
-    await this.cache.clearAll();
+    await this.store.addExperiment(experiment);
+    await this.clearCacheForEntity(experiment);
   }
 
   public async updateExperiment(
     name: string,
     args: Partial<ExperimentCreationArgs>
   ): Promise<void> {
-    const { targetApps, ...metadata } = args;
-    const existing = await this.getExperiment(name);
-    if (existing == null) {
+    const experiment = await this.getExperiment(name);
+    if (experiment == null) {
       console.warn("Attempting to update non-existent experiment");
       return;
     }
-    if (existing.started) {
+    if (experiment.started) {
       console.warn(
         "Attempting to update an experiment that has already started"
       );
       return;
     }
-    const updatedExperiment: Experiment = { ...existing, ...metadata };
-    await this.store.updateExperiment(name, updatedExperiment, targetApps);
-    await this.cache.clearAll();
+    await this.clearCacheForEntity(experiment);
+    await this.store.updateExperiment(experiment, args);
+    await this.clearCacheForEntity(experiment);
   }
 
   public async deleteExperiment(name: string): Promise<void> {
+    const experiment = await this.store.getExperiment(name);
+    if (!experiment) {
+      console.warn("Attempting to delete non-existent experiment");
+      return;
+    }
     await this.store.removeExperiment(name);
-    await this.cache.clearAll();
+    await this.clearCacheForEntity(experiment);
   }
 
   public async startExperiment(name: string): Promise<void> {
-    const existing = await this.getExperiment(name);
-    if (existing == null) {
+    const experiment = await this.getExperiment(name);
+    if (experiment == null) {
       console.warn("Attempting to start an experiment that doesn't exist");
       return;
     }
-    if (existing.started) {
+    if (experiment.started) {
       console.warn(
         "Attempting to start an experiment that has already started"
       );
       return;
     }
-    const updatedExperiment: Experiment = { ...existing, started: true };
-    await this.store.updateExperiment(name, updatedExperiment);
-    await this.cache.clearAll();
+    await this.store.updateExperiment(experiment, { started: true });
+    await this.clearCacheForEntity(experiment);
+  }
+
+  public async addTargetAppsToExperiment(
+    name: string,
+    targetApps: string[]
+  ): Promise<void> {
+    const experiment = await this.getExperiment(name);
+    if (experiment == null) {
+      console.warn("Attempting to update non-existent experiment");
+      return;
+    }
+    await this.store.addTargetAppsToExperiment(experiment, targetApps);
+    await this.clearCacheForTargetApp(...targetApps);
+  }
+
+  public async removeTargetAppsFromExperiment(
+    name: string,
+    targetApps: string[]
+  ): Promise<void> {
+    const experiment = await this.getExperiment(name);
+    if (experiment == null) {
+      console.warn("Attempting to update non-existent experiment");
+      return;
+    }
+    await this.store.removeTargetAppsFromExperiment(experiment, targetApps);
+    await this.clearCacheForTargetApp(...targetApps);
   }
 
   /* Dynamic Config */
@@ -255,30 +342,61 @@ export default class StatsigOnPrem implements StatsigInterface {
       name,
       salt: IDUtils.generateNewSalt(),
       idType: idType ?? "userID",
+      targetApps: new Set(targetApps ?? []),
       ...metadata,
     };
-    await this.store.addConfig(name, config, targetApps);
-    await this.cache.clearAll();
+    await this.store.addConfig(config);
+    await this.clearCacheForEntity(config);
   }
 
   public async updateConfig(
     name: string,
     args: Partial<DynamicConfigCreationArgs>
   ): Promise<void> {
-    const { targetApps, ...metadata } = args;
-    const existing = await this.getConfig(name);
-    if (existing == null) {
+    const config = await this.getConfig(name);
+    if (config == null) {
       console.warn("Attempting to update non-existent config");
       return;
     }
-    const updatedConfig: DynamicConfig = { ...existing, ...metadata };
-    await this.store.updateConfig(name, updatedConfig, targetApps);
-    await this.cache.clearAll();
+    await this.clearCacheForEntity(config);
+    await this.store.updateConfig(config, args);
+    await this.clearCacheForEntity(config);
   }
 
   public async deleteConfig(name: string): Promise<void> {
+    const config = await this.getConfig(name);
+    if (!config) {
+      console.warn("Attempting to delete non-existent config");
+      return;
+    }
     await this.store.removeConfig(name);
-    await this.cache.clearAll();
+    await this.clearCacheForEntity(config);
+  }
+
+  public async addTargetAppsToConfig(
+    name: string,
+    targetApps: string[]
+  ): Promise<void> {
+    const config = await this.getConfig(name);
+    if (config == null) {
+      console.warn("Attempting to update non-existent config");
+      return;
+    }
+    await this.store.addTargetAppsToConfig(config, targetApps);
+    await this.clearCacheForTargetApp(...targetApps);
+  }
+
+  public async removeTargetAppsFromConfig(
+    name: string,
+    targetApps: string[]
+  ): Promise<void> {
+    const config = await this.getConfig(name);
+    if (config == null) {
+      console.warn("Attempting to update non-existent config");
+      return;
+    }
+    await this.store.removeTargetAppsFromConfig(config, targetApps);
+    await this.clearCacheForTargetApp(...targetApps);
   }
 
   /* Target App */
@@ -297,7 +415,7 @@ export default class StatsigOnPrem implements StatsigInterface {
       return;
     }
     await this.store.addTargetApp(name, entities);
-    await this.cache.clearAll();
+    await this.clearCacheForTargetApp(name);
   }
 
   public async updateTargetApp(
@@ -310,12 +428,12 @@ export default class StatsigOnPrem implements StatsigInterface {
       return;
     }
     await this.store.updateTargetApp(name, { ...existing, ...entities });
-    await this.cache.clearAll();
+    await this.clearCacheForTargetApp(name);
   }
 
   public async deleteTargetApp(name: string): Promise<void> {
     await this.store.removeTargetApp(name);
-    await this.cache.clearAll();
+    await this.clearCacheForTargetApp(name);
   }
 
   public async addEntitiesToTargetApp(
@@ -323,12 +441,18 @@ export default class StatsigOnPrem implements StatsigInterface {
     entities: EntityNames
   ): Promise<void> {
     await this.store.addEntityAssocs(entities, targetApp);
-    const sdkKeys = await this.store.getSDKKeysForTargetApp(targetApp);
-    if (sdkKeys) {
-      await Promise.all(
-        Array.from(sdkKeys).map((sdkKey) => this.cache.clear(sdkKey))
-      );
-    }
+    await Promise.all([
+      ...Array.from(entities.gates).map((gate) =>
+        this.addTargetAppsToGate(gate, [targetApp])
+      ),
+      ...Array.from(entities.configs).map((config) =>
+        this.addTargetAppsToConfig(config, [targetApp])
+      ),
+      ...Array.from(entities.experiments).map((experiment) =>
+        this.addTargetAppsToExperiment(experiment, [targetApp])
+      ),
+    ]);
+    await this.clearCacheForTargetApp(targetApp);
   }
 
   public async removeEntitiesFromTargetApp(
@@ -336,12 +460,18 @@ export default class StatsigOnPrem implements StatsigInterface {
     entities: EntityNames
   ): Promise<void> {
     await this.store.removeEntityAssocs(entities, targetApp);
-    const sdkKeys = await this.store.getSDKKeysForTargetApp(targetApp);
-    if (sdkKeys) {
-      await Promise.all(
-        Array.from(sdkKeys).map((sdkKey) => this.cache.clear(sdkKey))
-      );
-    }
+    await Promise.all([
+      ...Array.from(entities.gates).map((gate) =>
+        this.removeTargetAppsFromGate(gate, [targetApp])
+      ),
+      ...Array.from(entities.configs).map((config) =>
+        this.removeTargetAppsFromConfig(config, [targetApp])
+      ),
+      ...Array.from(entities.experiments).map((experiment) =>
+        this.removeTargetAppsFromExperiment(experiment, [targetApp])
+      ),
+    ]);
+    await this.clearCacheForTargetApp(targetApp);
   }
 
   public async assignTargetAppsToSDKKey(
@@ -378,5 +508,45 @@ export default class StatsigOnPrem implements StatsigInterface {
   public async deactivateSDKKey(sdkKey: string): Promise<void> {
     await this.store.removeSDKKey(sdkKey);
     await this.cache.clear(sdkKey);
+  }
+
+  /* For migrating from 0.0.7-beta to 0.0.8-beta */
+  public async updateAll__V0_0_8_BETA(): Promise<void> {
+    const allTargetApps = await this.store.getTargetAppNames();
+    let reverseAssocs = {
+      gates: new Map<string, Set<string>>(),
+      configs: new Map<string, Set<string>>(),
+      experiments: new Map<string, Set<string>>(),
+    };
+    await Promise.all(
+      Array.from(allTargetApps).map(async (targetApp) => {
+        const entities = await this.store.getEntityAssocs(targetApp);
+        if (entities) {
+          (["gates", "configs", "experiments"] as const).forEach((type) => {
+            entities[type].forEach((entity) => {
+              const targetApps = reverseAssocs[type].get(entity);
+              if (targetApps) {
+                targetApps.add(targetApp);
+              } else {
+                reverseAssocs[type].set(entity, new Set([targetApp]));
+              }
+            });
+          });
+        }
+      })
+    );
+    await Promise.all([
+      ...Array.from(reverseAssocs.gates).map(([name, targetApps]) =>
+        this.addTargetAppsToGate(name, Array.from(targetApps))
+      ),
+      ...Array.from(reverseAssocs.configs).map(([name, targetApps]) =>
+        this.addTargetAppsToConfig(name, Array.from(targetApps))
+      ),
+      ...Array.from(reverseAssocs.experiments).map(([name, targetApps]) =>
+        this.addTargetAppsToExperiment(name, Array.from(targetApps))
+      ),
+    ]);
+
+    await this.store.updateSerialization__V0_0_8_BETA();
   }
 }

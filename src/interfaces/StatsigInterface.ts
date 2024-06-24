@@ -32,6 +32,18 @@ export interface StatsigInterface {
    * @param name Name of the gate
    */
   deleteGate(name: string): Promise<void>;
+  /**
+   * Adds target apps to a gate
+   * @param name Name of the gate
+   * @param targetApps List of target apps
+   */
+  addTargetAppsToGate(name: string, targetApps: string[]): Promise<void>;
+  /**
+   * Removes target apps from a gate
+   * @param name Name of the gate
+   * @param targetApps List of target apps
+   */
+  removeTargetAppsFromGate(name: string, targetApps: string[]): Promise<void>;
 
   /**
    * Get an experiment
@@ -60,6 +72,21 @@ export interface StatsigInterface {
    * @param name Name of the experiment
    */
   startExperiment(name: string): Promise<void>;
+  /**
+   * Adds target apps to a experiment
+   * @param name Name of the experiment
+   * @param targetApps List of target apps
+   */
+  addTargetAppsToExperiment(name: string, targetApps: string[]): Promise<void>;
+  /**
+   * Removes target apps from a experiment
+   * @param name Name of the experiment
+   * @param targetApps List of target apps
+   */
+  removeTargetAppsFromExperiment(
+    name: string,
+    targetApps: string[]
+  ): Promise<void>;
 
   /**
    * Get a dynamic config
@@ -83,6 +110,18 @@ export interface StatsigInterface {
    * @param name Name of the dynamic config
    */
   deleteConfig(name: string): Promise<void>;
+  /**
+   * Adds target apps to a config
+   * @param name Name of the config
+   * @param targetApps List of target apps
+   */
+  addTargetAppsToConfig(name: string, targetApps: string[]): Promise<void>;
+  /**
+   * Removes target apps from a config
+   * @param name Name of the config
+   * @param targetApps List of target apps
+   */
+  removeTargetAppsFromConfig(name: string, targetApps: string[]): Promise<void>;
 
   /**
    * Create a target app with an initial set of gates, experiments, configs
@@ -130,7 +169,10 @@ export interface StatsigInterface {
    * @param targetApps Names of target apps to remove
    * @param sdkKey SDK key to remove the target app from
    */
-  removeTargetAppsFromSDKKey(targetApps: string[], sdkKey: string): Promise<void>;
+  removeTargetAppsFromSDKKey(
+    targetApps: string[],
+    sdkKey: string
+  ): Promise<void>;
   /**
    * Remove all existing target apps from an SDK key
    * @param sdkKey SDK key to clear any target apps previously assigned
