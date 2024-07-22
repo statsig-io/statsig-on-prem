@@ -340,18 +340,24 @@ export default class StorageHandler {
     }
   }
 
-  public async addSDKKey(sdkKey: string): Promise<void> {
+  public async addSDKKey(sdkKey: string): Promise<Set<string>> {
     await this.setAssoc({
       assoc: Assoc.SDK_KEY,
       source: sdkKey,
       destination: "registered",
     });
-    await this.updateRegisteredSDKKeys(new Set([sdkKey]), MutationType.Add);
+    return await this.updateRegisteredSDKKeys(
+      new Set([sdkKey]),
+      MutationType.Add
+    );
   }
 
-  public async removeSDKKey(sdkKey: string): Promise<void> {
+  public async removeSDKKey(sdkKey: string): Promise<Set<string>> {
     await this.deleteAssoc({ assoc: Assoc.SDK_KEY, source: sdkKey });
-    await this.updateRegisteredSDKKeys(new Set([sdkKey]), MutationType.Remove);
+    return await this.updateRegisteredSDKKeys(
+      new Set([sdkKey]),
+      MutationType.Remove
+    );
   }
 
   public async getEntityAssocs(
@@ -603,10 +609,11 @@ export default class StorageHandler {
   private async updateRegisteredSDKKeys(
     sdkKeys: Set<string>,
     mutation: MutationType
-  ): Promise<void> {
+  ): Promise<Set<string>> {
     const existing = await this.getRegisteredSDKKeys();
     const updated = await this.updateSet(existing, sdkKeys, mutation);
     await this.setAssoc({ assoc: Assoc.SDK_KEYS, destination: updated });
+    return updated;
   }
 
   private async updateSet<T>(

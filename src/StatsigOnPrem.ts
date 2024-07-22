@@ -16,18 +16,26 @@ import EntityDynamicConfig from "./entities/EntityDynamicConfig";
 import EntityFeatureGate from "./entities/EntityFeatureGate";
 import { IDUtils } from "./utils/IDUtils";
 import { SpecsCacheInterface } from "./interfaces/SpecsCacheInterface";
-import SpecsCache from "./SpecsCache";
 import StorageHandler from "./utils/StorageHandler";
 import HashUtils from "./utils/HashUtils";
 import { TargetAppNames } from "./types/TargetAppNames";
 import CacheHandler from "./utils/CacheHandler";
+import { SDKKeysCacheInterface } from "./interfaces/SDKKeyCacheInterface";
+
+type Plugins = Partial<{
+  specsCache: SpecsCacheInterface;
+  sdkKeysCache: SDKKeysCacheInterface;
+}>;
 
 export default class StatsigOnPrem implements StatsigInterface {
   private store: StorageHandler;
   private cache: CacheHandler;
-  public constructor(storage: StorageInterface, cache?: SpecsCacheInterface) {
+  public constructor(storage: StorageInterface, plugins?: Plugins) {
     this.store = new StorageHandler(storage);
-    this.cache = new CacheHandler(cache ?? new SpecsCache());
+    this.cache = new CacheHandler({
+      specs: plugins?.specsCache,
+      keys: plugins?.sdkKeysCache,
+    });
   }
 
   public async initialize(): Promise<void> {
@@ -40,7 +48,7 @@ export default class StatsigOnPrem implements StatsigInterface {
 
   public async clearCache(sdkKey?: string): Promise<void> {
     if (sdkKey) {
-      await this.cache.clear(sdkKey);
+      await this.cache.clearSpecs(sdkKey);
     } else {
       await this.cache.clearAll();
     }
@@ -51,7 +59,7 @@ export default class StatsigOnPrem implements StatsigInterface {
       targetApps.map(async (targetApp) => {
         const sdkKeys = await this.store.getSDKKeysForTargetApp(targetApp);
         if (sdkKeys) {
-          await this.cache.clear(...Array.from(sdkKeys));
+          await this.cache.clearSpecs(...Array.from(sdkKeys));
         }
       })
     );
@@ -62,7 +70,7 @@ export default class StatsigOnPrem implements StatsigInterface {
   ): Promise<void> {
     const targetApps = entity.targetApps;
     if (targetApps == null) {
-      await this.cache.clearAll();
+      await this.cache.clearSpecs();
     } else {
       await this.clearCacheForTargetApp(...Array.from(targetApps));
     }
@@ -479,7 +487,7 @@ export default class StatsigOnPrem implements StatsigInterface {
     sdkKey: string
   ): Promise<void> {
     await this.store.assignTargetAppsToSDKKey(targetApps, sdkKey);
-    await this.cache.clear(sdkKey);
+    await this.cache.clearSpecs(sdkKey);
   }
 
   public async removeTargetAppsFromSDKKey(
@@ -487,12 +495,12 @@ export default class StatsigOnPrem implements StatsigInterface {
     sdkKey: string
   ): Promise<void> {
     await this.store.removeTargetAppsFromSDKKey(targetApps, sdkKey);
-    await this.cache.clear(sdkKey);
+    await this.cache.clearSpecs(sdkKey);
   }
 
   public async clearTargetAppsFromSDKKey(sdkKey: string): Promise<void> {
     await this.store.clearTargetAppsFromSDKKey(sdkKey);
-    await this.cache.clear(sdkKey);
+    await this.cache.clearSpecs(sdkKey);
   }
 
   public async getTargetAppNames(): Promise<TargetAppNames> {
@@ -502,11 +510,17 @@ export default class StatsigOnPrem implements StatsigInterface {
   /* SDK Keys */
 
   public async registerSDKKey(sdkKey: string): Promise<void> {
-    await this.store.addSDKKey(sdkKey);
+    const sdkKeys = await this.store.addSDKKey(sdkKey);
+    await this.cache.cacheSDKKeys(sdkKeys);
   }
 
   public async deactivateSDKKey(sdkKey: string): Promise<void> {
-    await this.store.removeSDKKey(sdkKey);
-    await this.cache.clear(sdkKey);
+    const sdkKeys = await this.store.removeSDKKey(sdkKey);
+    await this.cache.cacheSDKKeys(sdkKeys);
+    await this.cache.clearSpecs(sdkKey);
+  }
+
+  public async getRegisteredSDKKeys(): Promise<Set<string>> {
+    return this.cache.getSDKKeys();
   }
 }
