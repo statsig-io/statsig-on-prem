@@ -509,44 +509,4 @@ export default class StatsigOnPrem implements StatsigInterface {
     await this.store.removeSDKKey(sdkKey);
     await this.cache.clear(sdkKey);
   }
-
-  /* For migrating from 0.0.7-beta to 0.0.8-beta */
-  public async updateAll__V0_0_8_BETA(): Promise<void> {
-    const allTargetApps = await this.store.getTargetAppNames();
-    let reverseAssocs = {
-      gates: new Map<string, Set<string>>(),
-      configs: new Map<string, Set<string>>(),
-      experiments: new Map<string, Set<string>>(),
-    };
-    await Promise.all(
-      Array.from(allTargetApps).map(async (targetApp) => {
-        const entities = await this.store.getEntityAssocs(targetApp);
-        if (entities) {
-          (["gates", "configs", "experiments"] as const).forEach((type) => {
-            entities[type].forEach((entity) => {
-              const targetApps = reverseAssocs[type].get(entity);
-              if (targetApps) {
-                targetApps.add(targetApp);
-              } else {
-                reverseAssocs[type].set(entity, new Set([targetApp]));
-              }
-            });
-          });
-        }
-      })
-    );
-    await Promise.all([
-      ...Array.from(reverseAssocs.gates).map(([name, targetApps]) =>
-        this.addTargetAppsToGate(name, Array.from(targetApps))
-      ),
-      ...Array.from(reverseAssocs.configs).map(([name, targetApps]) =>
-        this.addTargetAppsToConfig(name, Array.from(targetApps))
-      ),
-      ...Array.from(reverseAssocs.experiments).map(([name, targetApps]) =>
-        this.addTargetAppsToExperiment(name, Array.from(targetApps))
-      ),
-    ]);
-
-    await this.store.updateSerialization__V0_0_8_BETA();
-  }
 }
