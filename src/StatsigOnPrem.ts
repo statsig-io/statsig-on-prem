@@ -17,7 +17,7 @@ import EntityFeatureGate from "./entities/EntityFeatureGate";
 import { IDUtils } from "./utils/IDUtils";
 import { SpecsCacheInterface } from "./interfaces/SpecsCacheInterface";
 import StorageHandler from "./utils/StorageHandler";
-import HashUtils from "./utils/HashUtils";
+import HashUtils, { HashFn } from "./utils/HashUtils";
 import { TargetAppNames } from "./types/TargetAppNames";
 import CacheHandler from "./utils/CacheHandler";
 import { SDKKeysCacheInterface } from "./interfaces/SDKKeyCacheInterface";
@@ -25,6 +25,7 @@ import { SDKKeysCacheInterface } from "./interfaces/SDKKeyCacheInterface";
 type Plugins = Partial<{
   specsCache: SpecsCacheInterface;
   sdkKeysCache: SDKKeysCacheInterface;
+  hash: HashFn;
 }>;
 
 export default class StatsigOnPrem implements StatsigInterface {
@@ -36,6 +37,9 @@ export default class StatsigOnPrem implements StatsigInterface {
       specs: plugins?.specsCache,
       keys: plugins?.sdkKeysCache,
     });
+    if (plugins?.hash !== undefined) {
+      HashUtils.setHashFn(plugins.hash);
+    }
   }
 
   public async initialize(): Promise<void> {
