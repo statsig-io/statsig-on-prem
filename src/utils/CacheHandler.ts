@@ -21,7 +21,7 @@ export default class CacheHandler {
     await this.cache.specs.set(cacheKey, specs);
   }
 
-  public async getSpecs(sdkKey: string): Promise<ConfigSpecs> {
+  public async getSpecs(sdkKey: string): Promise<ConfigSpecs | null> {
     const cacheKey = CacheUtils.getCacheKey(sdkKey);
     return await this.cache.specs.get(cacheKey);
   }
@@ -43,7 +43,7 @@ export default class CacheHandler {
     return await this.cache.keys.set(sdkKeys);
   }
 
-  public async getSDKKeys(): Promise<Set<string>> {
+  public async getSDKKeys(): Promise<Set<string> | null> {
     return await this.cache.keys.get();
   }
 

@@ -19,19 +19,32 @@ describe("SDKKeysCachePlugin", () => {
   it("Register SDK Key", async () => {
     await statsig.registerSDKKey("secret-123");
     const cachedKeys = await sdkKeysCache.get();
-    expect(cachedKeys.has("secret-123")).toEqual(true);
+    expect(cachedKeys).not.toBeNull();
+    expect(cachedKeys?.has("secret-123")).toEqual(true);
   });
 
   it("Deactivate SDK Key", async () => {
     await statsig.deactivateSDKKey("secret-123");
     const cachedKeys = await sdkKeysCache.get();
-    expect(cachedKeys.has("secret-123")).toEqual(false);
+    expect(cachedKeys).not.toBeNull();
+    expect(cachedKeys?.has("secret-123")).toEqual(false);
   });
 
   it("Clear Cache", async () => {
     await statsig.registerSDKKey("secret-123");
     await statsig.clearCache();
     const cachedKeys = await sdkKeysCache.get();
-    expect(cachedKeys.has("secret-123")).toEqual(false);
+    expect(cachedKeys).toBeNull();
+  });
+
+  it("Re-populates from the store", async () => {
+    await statsig.registerSDKKey("secret-123");
+    await sdkKeysCache.clear();
+    const registeredKeys = await statsig.getRegisteredSDKKeys();
+    expect(registeredKeys.has("secret-123")).toEqual(true);
+    
+    const cachedKeys = await sdkKeysCache.get();
+    expect(cachedKeys).not.toBeNull();
+    expect(cachedKeys?.has("secret-123")).toEqual(true);
   });
 });

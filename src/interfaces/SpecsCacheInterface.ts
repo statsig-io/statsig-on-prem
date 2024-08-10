@@ -7,10 +7,10 @@ import { ConfigSpecs } from "../types/ConfigSpecs";
  */
 export interface SpecsCacheInterface {
   /**
-   * Returns specs stored for a given key.
+   * Returns specs stored for a given key, or null if the cache has not been populated yet.
    * @param key - Key of stored specs
    */
-  get(key: string): Promise<ConfigSpecs>;
+  get(key: string): Promise<ConfigSpecs | null>;
   /**
    * Updates specs for a given key.
    * @param key - Key of stored specs
