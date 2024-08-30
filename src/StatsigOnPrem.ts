@@ -27,6 +27,16 @@ type Plugins = Partial<{
   sdkKeysCache: SDKKeysCacheInterface;
 }>;
 
+type UpdateGatesPayload = {
+  name: string,
+  args: Partial<FeatureGateCreationArgs>,
+}[];
+
+type UpdateGatesResponse = {
+  name: string,
+  status: 'success' | 'non-existent' | 'error',
+}[]
+
 export default class StatsigOnPrem implements StatsigInterface {
   private store: StorageHandler;
   private cache: CacheHandler;
@@ -203,6 +213,59 @@ export default class StatsigOnPrem implements StatsigInterface {
     await this.clearCacheForEntity(gate);
     await this.store.updateGate(gate, args);
     await this.clearCacheForEntity(gate);
+  }
+
+  public async updateGates(
+    gatesToUpdate: UpdateGatesPayload,
+  ): Promise<UpdateGatesResponse> {
+    const nonExistentGates: string[] = [];
+    const erroredUpdateGates: string[] = [];
+    const successfullyUpdatedGates: string[] = [];
+    const targetAppsToUpdate = new Set<string>();
+
+    const validatedGates = await Promise.allSettled(
+      gatesToUpdate.map((gateToUpdate) =>
+        this.getGate(gateToUpdate.name)
+          .then((gate) => {
+            if (gate !== null) {
+              return [gate, gateToUpdate.args];
+            }
+            throw new Error('non-existent flag');
+          })
+          .catch(() => {
+            nonExistentGates.push(gateToUpdate.name)
+          })
+      )
+    );
+    const updatedGates = validatedGates
+      .flatMap((gateCheck) => {
+        if (gateCheck.status === 'fulfilled' && gateCheck.value) {
+          const [gate, args] = gateCheck.value as [FeatureGate, UpdateGatesPayload[0]['args']];
+          return this.store.updateGate(gate, args)
+            .then(() => {
+              successfullyUpdatedGates.push(gate.name);
+              return gate;
+            })
+            .catch(() => {
+              erroredUpdateGates.push(gate.name);
+            });
+        }
+        return [];
+      });
+
+    const cacheClears = await Promise.allSettled(updatedGates);
+    cacheClears.map((gateUpdate) => {
+      if (gateUpdate.status === 'fulfilled' && gateUpdate.value) {
+        gateUpdate.value?.targetApps?.forEach((targetApp) => targetAppsToUpdate.add(targetApp));
+      }
+    })
+    await this.clearCacheForTargetApp(...Array.from(targetAppsToUpdate));
+
+    return [
+      ...successfullyUpdatedGates.map((gateName): UpdateGatesResponse[0] => ({ name: gateName, status: 'success' })),
+      ...nonExistentGates.map((gateName): UpdateGatesResponse[0] => ({ name: gateName, status: 'non-existent' })),
+      ...erroredUpdateGates.map((gateName): UpdateGatesResponse[0] => ({ name: gateName, status: 'error' })),
+    ];
   }
 
   public async deleteGate(name: string): Promise<void> {
