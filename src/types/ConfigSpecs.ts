@@ -117,6 +117,9 @@ export enum APIOperatorType {
   STR_CONTAINS_ANY = "str_contains_any",
   STR_CONTAINS_NONE = "str_contains_none",
 
+  STR_STARTS_WITH_ANY = "str_starts_with_any",
+  STR_ENDS_WITH_ANY = "str_ends_with_any",
+
   AFTER = "after",
   BEFORE = "before",
   ON = "on",
