@@ -85,15 +85,13 @@ export default class StorageHandler {
   }
 
   public async updateConfig(
-    config: DynamicConfig,
-    args: DynamicConfigUpdateArgs
+    updated: DynamicConfig,
+    args?: DynamicConfigUpdateArgs
   ): Promise<void> {
-    const { targetApps, ...changes } = args;
-    let updated: DynamicConfig = { ...config, ...changes };
-    if (targetApps) {
+    if (args?.targetApps) {
       await this.updateConfigTargetApps(
         updated,
-        new Set(targetApps),
+        new Set(args?.targetApps),
         MutationType.Replace
       );
     }

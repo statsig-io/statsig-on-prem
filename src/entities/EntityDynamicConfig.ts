@@ -1,5 +1,10 @@
-import { APIConfigRule, APIConfigType, APIEntityType } from "../types/ConfigSpecs";
+import {
+  APIConfigRule,
+  APIConfigType,
+  APIEntityType,
+} from "../types/ConfigSpecs";
 import { DynamicConfig } from "../types/DynamicConfig";
+import ConfigRuleLoader from "../utils/ConfigRuleLoader";
 import IEntity from "./IEntity";
 
 export default class EntityDynamicConfig implements IEntity {
@@ -17,7 +22,8 @@ export default class EntityDynamicConfig implements IEntity {
     return this.config.defaultValue;
   }
   getRules(): APIConfigRule[] {
-    return [];
+    const rules = ConfigRuleLoader.getRulesFromData(this.config.rulesJSON);
+    return rules.map((rule) => rule.getAPIRule());
   }
   getAPIType(): APIConfigType {
     return APIConfigType.DYNAMIC_CONFIG;

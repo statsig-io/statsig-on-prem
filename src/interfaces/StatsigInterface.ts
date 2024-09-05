@@ -1,9 +1,18 @@
 import type {
   DynamicConfig,
-  DynamicConfigMetadata,
+  DynamicConfigCreationArgs,
+  DynamicConfigUpdateArgs,
 } from "../types/DynamicConfig";
-import type { Experiment, ExperimentMetadata } from "../types/Experiment";
-import type { FeatureGate, FeatureGateMetadata } from "../types/FeatureGate";
+import type {
+  Experiment,
+  ExperimentCreationArgs,
+  ExperimentUpdateArgs,
+} from "../types/Experiment";
+import type {
+  FeatureGate,
+  FeatureGateCreationArgs,
+  FeatureGateUpdateArgs,
+} from "../types/FeatureGate";
 import { EntityNames } from "../types/EntityNames";
 
 /**
@@ -20,13 +29,13 @@ export interface StatsigInterface {
    * @param name Name of the gate
    * @param metadata properties of the gate
    */
-  createGate(name: string, metadata: FeatureGateMetadata): Promise<void>;
+  createGate(name: string, metadata: FeatureGateCreationArgs): Promise<void>;
   /**
    * Update a gate
    * @param name Name of the gate
    * @param metadata properties of the gate
    */
-  updateGate(name: string, metadata: FeatureGateMetadata): Promise<void>;
+  updateGate(name: string, metadata: FeatureGateUpdateArgs): Promise<void>;
   /**
    * Delete a gate
    * @param name Name of the gate
@@ -55,13 +64,16 @@ export interface StatsigInterface {
    * @param name Name of the experiment
    * @param metadata properties of the experiment
    */
-  createExperiment(name: string, metadata: ExperimentMetadata): Promise<void>;
+  createExperiment(
+    name: string,
+    metadata: ExperimentCreationArgs
+  ): Promise<void>;
   /**
    * Update an experiment
    * @param name Name of the experiment
    * @param metadata properties of the experiment
    */
-  updateExperiment(name: string, metadata: ExperimentMetadata): Promise<void>;
+  updateExperiment(name: string, metadata: ExperimentUpdateArgs): Promise<void>;
   /**
    * Delete an experiment
    * @param name Name of the experiment
@@ -98,13 +110,16 @@ export interface StatsigInterface {
    * @param name Name of the dynamic config
    * @param metadata properties of the dynamic config
    */
-  createConfig(name: string, metadata: DynamicConfigMetadata): Promise<void>;
+  createConfig(
+    name: string,
+    metadata: DynamicConfigCreationArgs
+  ): Promise<void>;
   /**
    * Update a dynamic config
    * @param name Name of the dynamic config
    * @param metadata properties of the dynamic config
    */
-  updateConfig(name: string, metadata: DynamicConfigMetadata): Promise<void>;
+  updateConfig(name: string, metadata: DynamicConfigUpdateArgs): Promise<void>;
   /**
    * Delete a dynamic config
    * @param name Name of the dynamic config

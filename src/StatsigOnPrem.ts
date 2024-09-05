@@ -3,9 +3,18 @@ import { StorageInterface } from "./interfaces/StorageInterface";
 import type {
   DynamicConfig,
   DynamicConfigCreationArgs,
+  DynamicConfigUpdateArgs,
 } from "./types/DynamicConfig";
-import type { Experiment, ExperimentCreationArgs } from "./types/Experiment";
-import type { FeatureGate, FeatureGateCreationArgs } from "./types/FeatureGate";
+import type {
+  Experiment,
+  ExperimentCreationArgs,
+  ExperimentUpdateArgs,
+} from "./types/Experiment";
+import type {
+  FeatureGate,
+  FeatureGateCreationArgs,
+  FeatureGateUpdateArgs,
+} from "./types/FeatureGate";
 import { EntityNames } from "./types/EntityNames";
 import { GLOBAL_ASSOC_KEY } from "./utils/StorageUtils";
 import { ConfigSpecs } from "./types/ConfigSpecs";
@@ -21,6 +30,7 @@ import HashUtils from "./utils/HashUtils";
 import { TargetAppNames } from "./types/TargetAppNames";
 import CacheHandler from "./utils/CacheHandler";
 import { SDKKeysCacheInterface } from "./interfaces/SDKKeyCacheInterface";
+import ConfigRuleBuilder from "./utils/ConfigRuleBuilder";
 
 type Plugins = Partial<{
   specsCache: SpecsCacheInterface;
@@ -193,7 +203,7 @@ export default class StatsigOnPrem implements StatsigInterface {
 
   public async updateGate(
     name: string,
-    args: Partial<FeatureGateCreationArgs>
+    args: FeatureGateUpdateArgs
   ): Promise<void> {
     const gate = await this.getGate(name);
     if (gate == null) {
@@ -265,7 +275,7 @@ export default class StatsigOnPrem implements StatsigInterface {
 
   public async updateExperiment(
     name: string,
-    args: Partial<ExperimentCreationArgs>
+    args: ExperimentUpdateArgs
   ): Promise<void> {
     const experiment = await this.getExperiment(name);
     if (experiment == null) {
@@ -359,15 +369,23 @@ export default class StatsigOnPrem implements StatsigInterface {
 
   public async updateConfig(
     name: string,
-    args: Partial<DynamicConfigCreationArgs>
+    args: DynamicConfigUpdateArgs
   ): Promise<void> {
     const config = await this.getConfig(name);
     if (config == null) {
       console.warn("Attempting to update non-existent config");
       return;
     }
-    await this.clearCacheForEntity(config);
-    await this.store.updateConfig(config, args);
+    const { targetApps, patchRules, ...changes } = args;
+    const updated: DynamicConfig = { ...config, ...changes };
+    if (targetApps) {
+      await this.clearCacheForTargetApp(...targetApps);
+    }
+    if (patchRules) {
+      const builder = new ConfigRuleBuilder(config);
+      updated.rulesJSON = patchRules(builder).getRulesJSON();
+    }
+    await this.store.updateConfig(updated, args);
     await this.clearCacheForEntity(config);
   }
 
