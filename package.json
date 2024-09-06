@@ -21,6 +21,7 @@
     "statsig-node": "^5.15.1-beta.1"
   },
   "dependencies": {
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "zod": "^3.23.8"
   }
 }

@@ -1,8 +1,11 @@
+import type ConfigRuleBuilder from "../utils/ConfigRuleBuilder";
+
 export declare type DynamicConfig = {
   name: string;
   salt: string;
   idType: string;
   targetApps: Set<string>;
+  rulesJSON?: string;
 } & DynamicConfigMetadata;
 
 export declare type DynamicConfigMetadata = {
@@ -15,4 +18,6 @@ export type DynamicConfigCreationArgs = {
   idType?: string;
 } & DynamicConfigMetadata;
 
-export type DynamicConfigUpdateArgs = Partial<DynamicConfigCreationArgs>;
+export type DynamicConfigUpdateArgs = Partial<DynamicConfigCreationArgs> & {
+  patchRules?: (builder: ConfigRuleBuilder) => ConfigRuleBuilder;
+};

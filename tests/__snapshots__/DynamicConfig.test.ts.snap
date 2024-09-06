@@ -1,0 +1,74 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Dynamic Config Update Dynmaic Config Rules: config-rules 1`] = `
+{
+  "dynamic_configs": [
+    {
+      "defaultValue": {
+        "a_string": "default",
+      },
+      "enabled": true,
+      "entity": "dynamic_config",
+      "idType": "userID",
+      "isActive": undefined,
+      "isDeviceBased": false,
+      "name": "test-config",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "additionalValues": null,
+              "field": "userID",
+              "idType": "userID",
+              "operator": "any",
+              "targetValue": [
+                "123",
+                "456",
+              ],
+              "type": "user_field",
+            },
+          ],
+          "id": "3272161690",
+          "idType": "userID",
+          "name": "Specific Users",
+          "passPercentage": 100,
+          "returnValue": {
+            "a_string": "user",
+          },
+          "salt": "mocked-salt",
+        },
+        {
+          "conditions": [
+            {
+              "additionalValues": null,
+              "field": "email",
+              "idType": "userID",
+              "operator": "str_contains_any",
+              "targetValue": [
+                "@statsig.com",
+              ],
+              "type": "user_field",
+            },
+          ],
+          "id": "634500529",
+          "idType": "userID",
+          "name": "Statsig Employee",
+          "passPercentage": 100,
+          "returnValue": {
+            "a_string": "statsig",
+          },
+          "salt": "mocked-salt",
+        },
+      ],
+      "salt": "mocked-salt",
+      "type": "dynamic_config",
+    },
+  ],
+  "feature_gates": [],
+  "has_updates": true,
+  "hashed_sdk_keys_to_entities": {},
+  "layer_configs": [],
+  "layers": {},
+  "time": Any<Number>,
+}
+`;
