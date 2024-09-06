@@ -3,3 +3,7 @@ export class ExhaustSwitchError extends Error {
     super(`Unreachable case: ${JSON.stringify(x)}`);
   }
 }
+
+export function assertNeverX(x: never): never {
+  throw new ExhaustSwitchError(x);
+}
