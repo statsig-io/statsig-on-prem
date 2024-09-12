@@ -77,7 +77,7 @@ describe("Feature Gate", () => {
     expect(gate?.targetApps).toEqual(new Set());
   });
 
-  describe("multi-target app storage", () => {
+  describe("Update Gate interactions with storage", () => {
     let storageSpy: { [key: string]: jest.SpyInstance };
     beforeEach(async () => {
       const emptyTargetApp = {
@@ -90,9 +90,9 @@ describe("Feature Gate", () => {
       await statsig.createTargetApp("target_app", emptyTargetApp);
 
       storageSpy = {
-        set: jest.spyOn(storage, 'set'),
-        get: jest.spyOn(storage, 'get'),
-        delete: jest.spyOn(storage, 'delete'),
+        set: jest.spyOn(storage, "set"),
+        get: jest.spyOn(storage, "get"),
+        delete: jest.spyOn(storage, "delete"),
       };
 
     });
@@ -102,8 +102,8 @@ describe("Feature Gate", () => {
       storageSpy.set.mockClear();
 
       await statsig.updateGate("test-gate", { targetApps: ["target_app"] });
-      expect(storageSpy.set).toHaveBeenNthCalledWith(1, expect.stringMatching('statsig:entities:*'), expect.anything())
-      expect(storageSpy.set).toHaveBeenNthCalledWith(2, expect.stringMatching('statsig:gate:*'), expect.anything())
+      expect(storageSpy.set).toHaveBeenNthCalledWith(1, expect.stringMatching("statsig:entities:*"), expect.anything())
+      expect(storageSpy.set).toHaveBeenNthCalledWith(2, expect.stringMatching("statsig:gate:*"), expect.anything())
       expect(storageSpy.set).toHaveBeenCalledTimes(2);
     });
 
@@ -112,7 +112,7 @@ describe("Feature Gate", () => {
       storageSpy.set.mockClear();
 
       await statsig.updateGate("test-gate", { enabled: false });
-      expect(storageSpy.set).toHaveBeenNthCalledWith(1, expect.stringMatching('statsig:gate:*'), expect.anything())
+      expect(storageSpy.set).toHaveBeenNthCalledWith(1, expect.stringMatching("statsig:gate:*"), expect.anything())
       expect(storageSpy.set).toHaveBeenCalledTimes(1);
     });
 
@@ -121,7 +121,7 @@ describe("Feature Gate", () => {
       storageSpy.set.mockClear();
 
       await statsig.updateGate("test-gate", { enabled: false, targetApps: [] });
-      expect(storageSpy.set).toHaveBeenNthCalledWith(1, expect.stringMatching('statsig:gate:*'), expect.anything())
+      expect(storageSpy.set).toHaveBeenNthCalledWith(1, expect.stringMatching("statsig:gate:*"), expect.anything())
       expect(storageSpy.set).toHaveBeenCalledTimes(1);
     });
 
@@ -130,9 +130,18 @@ describe("Feature Gate", () => {
       storageSpy.set.mockClear();
 
       await statsig.updateGate("test-gate", { enabled: false, targetApps: [] });
-      expect(storageSpy.set).toHaveBeenNthCalledWith(1, expect.stringMatching('statsig:entities:*'), expect.anything())
-      expect(storageSpy.set).toHaveBeenNthCalledWith(2, expect.stringMatching('statsig:gate:*'), expect.anything())
+      expect(storageSpy.set).toHaveBeenNthCalledWith(1, expect.stringMatching("statsig:entities:*"), expect.anything())
+      expect(storageSpy.set).toHaveBeenNthCalledWith(2, expect.stringMatching("statsig:gate:*"), expect.anything())
       expect(storageSpy.set).toHaveBeenCalledTimes(2);
+    });
+
+    it("update gate should only update existing target apps", async () => {
+      await statsig.createGate("test-gate", { enabled: true });
+      storageSpy.set.mockClear();
+
+      await statsig.updateGate("test-gate", { enabled: false, targetApps: ["non-existent-target-app"] });
+      expect(storageSpy.set).toHaveBeenNthCalledWith(1, expect.stringMatching("statsig:gate:*"), expect.anything())
+      expect(storageSpy.set).toHaveBeenCalledTimes(1);
     });
   });
 });

@@ -547,8 +547,9 @@ export default class StorageHandler {
         );
       }
     } else {
+      const allTargetApps = await this.getTargetAppNames();
       const impactedTargetApps = new Set(entity.targetApps);
-      targetApps.forEach(value => impactedTargetApps.add(value));
+      targetApps.forEach(value => allTargetApps.has(value) && impactedTargetApps.add(value));
       await Promise.all(
         Array.from(impactedTargetApps).reduce<Promise<void>[]>(
           (targetAppPromises, targetApp) => {
