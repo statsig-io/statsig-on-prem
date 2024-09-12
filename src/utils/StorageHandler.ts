@@ -38,7 +38,7 @@ export default class StorageHandler {
   ): Promise<void> {
     const { targetApps, ...changes } = args;
     let updated: FeatureGate = { ...gate, ...changes };
-    if (targetApps && targetApps.length > 0) {
+    if (targetApps) {
       await this.updateGateTargetApps(
         updated,
         new Set(targetApps),

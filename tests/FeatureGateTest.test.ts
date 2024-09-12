@@ -107,5 +107,32 @@ describe("Feature Gate", () => {
       expect(storageSpy.set).toHaveBeenCalledTimes(2);
     });
 
+    it("update gate should not update target apps if none were associated", async () => {
+      await statsig.createGate("test-gate", { enabled: true });
+      storageSpy.set.mockClear();
+
+      await statsig.updateGate("test-gate", { enabled: false });
+      expect(storageSpy.set).toHaveBeenNthCalledWith(1, expect.stringMatching('statsig:gate:*'), expect.anything())
+      expect(storageSpy.set).toHaveBeenCalledTimes(1);
+    });
+
+    it("update gate should not update target apps if update target apps arg is empty and no prior target app", async () => {
+      await statsig.createGate("test-gate", { enabled: true });
+      storageSpy.set.mockClear();
+
+      await statsig.updateGate("test-gate", { enabled: false, targetApps: [] });
+      expect(storageSpy.set).toHaveBeenNthCalledWith(1, expect.stringMatching('statsig:gate:*'), expect.anything())
+      expect(storageSpy.set).toHaveBeenCalledTimes(1);
+    });
+
+    it("update gate should remove target app if update target apps arg is empty and there is a prior target app", async () => {
+      await statsig.createGate("test-gate", { enabled: true, targetApps: ["target_app"] });
+      storageSpy.set.mockClear();
+
+      await statsig.updateGate("test-gate", { enabled: false, targetApps: [] });
+      expect(storageSpy.set).toHaveBeenNthCalledWith(1, expect.stringMatching('statsig:entities:*'), expect.anything())
+      expect(storageSpy.set).toHaveBeenNthCalledWith(2, expect.stringMatching('statsig:gate:*'), expect.anything())
+      expect(storageSpy.set).toHaveBeenCalledTimes(2);
+    });
   });
 });
