@@ -17,6 +17,7 @@ describe("Feature Gate", () => {
   afterEach(async () => {
     storage.clearAll();
     await statsig.clearCache();
+    jest.clearAllMocks();
   });
 
   it("Create Gate", async () => {
@@ -74,5 +75,37 @@ describe("Feature Gate", () => {
     await statsig.removeTargetAppsFromGate("test-gate", ["target-app-1"]);
     gate = await statsig.getGate("test-gate");
     expect(gate?.targetApps).toEqual(new Set());
+  });
+
+  describe("multi-target app storage", () => {
+    let storageSpy: { [key: string]: jest.SpyInstance };
+    beforeEach(async () => {
+      const emptyTargetApp = {
+        gates: new Set([]),
+        configs: new Set([]),
+        experiments: new Set([]),
+      };
+      await statsig.createTargetApp("irrelevant_target_app", emptyTargetApp);
+      await statsig.createTargetApp("irrelevant_target_app2", emptyTargetApp);
+      await statsig.createTargetApp("target_app", emptyTargetApp);
+
+      storageSpy = {
+        set: jest.spyOn(storage, 'set'),
+        get: jest.spyOn(storage, 'get'),
+        delete: jest.spyOn(storage, 'delete'),
+      };
+
+    });
+
+    it("update gate should only update storage for impacted target apps", async () => {
+      await statsig.createGate("test-gate", { enabled: true });
+      storageSpy.set.mockClear();
+
+      await statsig.updateGate("test-gate", { targetApps: ["target_app"] });
+      expect(storageSpy.set).toHaveBeenNthCalledWith(1, expect.stringMatching('statsig:entities:*'), expect.anything())
+      expect(storageSpy.set).toHaveBeenNthCalledWith(2, expect.stringMatching('statsig:gate:*'), expect.anything())
+      expect(storageSpy.set).toHaveBeenCalledTimes(2);
+    });
+
   });
 });

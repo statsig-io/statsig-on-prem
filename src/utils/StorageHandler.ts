@@ -38,7 +38,7 @@ export default class StorageHandler {
   ): Promise<void> {
     const { targetApps, ...changes } = args;
     let updated: FeatureGate = { ...gate, ...changes };
-    if (targetApps) {
+    if (targetApps && targetApps.length > 0) {
       await this.updateGateTargetApps(
         updated,
         new Set(targetApps),
@@ -547,12 +547,19 @@ export default class StorageHandler {
         );
       }
     } else {
-      const allTargetApps = await this.getTargetAppNames();
+      const impactedTargetApps = new Set(entity.targetApps);
+      targetApps.forEach(value => impactedTargetApps.add(value));
       await Promise.all(
-        Array.from(allTargetApps).map((targetApp) =>
-          Array.from(targetApps).includes(targetApp)
-            ? this.addEntityAssocs(entityNames, targetApp)
-            : this.removeEntityAssocs(entityNames, targetApp)
+        Array.from(impactedTargetApps).reduce<Promise<void>[]>(
+          (targetAppPromises, targetApp) => {
+            if (targetApps.has(targetApp) && !entity.targetApps.has(targetApp)) {
+              targetAppPromises.push(this.addEntityAssocs(entityNames, targetApp));
+            } else if (!targetApps.has(targetApp) && entity.targetApps.has(targetApp)) {
+              targetAppPromises.push(this.removeEntityAssocs(entityNames, targetApp));
+            }
+            return targetAppPromises;
+          },
+          []
         )
       );
       entity.targetApps = targetApps;
