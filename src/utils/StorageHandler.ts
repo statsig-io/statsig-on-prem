@@ -549,10 +549,14 @@ export default class StorageHandler {
     } else {
       const allTargetApps = await this.getTargetAppNames();
       await Promise.all(
-        Array.from(allTargetApps).map((targetApp) =>
-          Array.from(targetApps).includes(targetApp)
-            ? this.addEntityAssocs(entityNames, targetApp)
-            : this.removeEntityAssocs(entityNames, targetApp)
+        filterNulls(
+          Array.from(allTargetApps).map((targetApp) =>
+            targetApps.has(targetApp)
+              ? this.addEntityAssocs(entityNames, targetApp)
+              : entity.targetApps.has(targetApp)
+              ? this.removeEntityAssocs(entityNames, targetApp)
+              : null
+          )
         )
       );
       entity.targetApps = targetApps;
