@@ -551,16 +551,14 @@ export default class StorageHandler {
       const impactedTargetApps = new Set(entity.targetApps);
       targetApps.forEach(value => allTargetApps.has(value) && impactedTargetApps.add(value));
       await Promise.all(
-        Array.from(impactedTargetApps).reduce<Promise<void>[]>(
-          (targetAppPromises, targetApp) => {
-            if (targetApps.has(targetApp) && !entity.targetApps.has(targetApp)) {
-              targetAppPromises.push(this.addEntityAssocs(entityNames, targetApp));
-            } else if (!targetApps.has(targetApp) && entity.targetApps.has(targetApp)) {
-              targetAppPromises.push(this.removeEntityAssocs(entityNames, targetApp));
-            }
-            return targetAppPromises;
-          },
-          []
+        filterNulls(
+          Array.from(allTargetApps).map((targetApp) =>
+            targetApps.has(targetApp)
+              ? this.addEntityAssocs(entityNames, targetApp)
+              : entity.targetApps.has(targetApp)
+              ? this.removeEntityAssocs(entityNames, targetApp)
+              : null
+          )
         )
       );
       entity.targetApps = targetApps;
