@@ -7,8 +7,8 @@ export default class SpecsCache implements SpecsCacheInterface {
     this.cache = {};
   }
 
-  get(key: string): Promise<ConfigSpecs> {
-    return Promise.resolve(this.cache[key]);
+  get(key: string): Promise<ConfigSpecs | null> {
+    return Promise.resolve(this.cache[key] ?? null);
   }
   set(key: string, specs: ConfigSpecs): Promise<void> {
     this.cache[key] = specs;

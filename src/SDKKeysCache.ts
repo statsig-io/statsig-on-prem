@@ -1,12 +1,12 @@
 import { SDKKeysCacheInterface } from "./interfaces/SDKKeyCacheInterface";
 
 export default class SDKKeysCache implements SDKKeysCacheInterface {
-  private cache: Set<string>;
+  private cache: Set<string> | null;
   public constructor() {
-    this.cache = new Set();
+    this.cache = null;
   }
 
-  get(): Promise<Set<string>> {
+  get(): Promise<Set<string> | null> {
     return Promise.resolve(this.cache);
   }
   set(keys: Set<string>): Promise<void> {
@@ -14,7 +14,7 @@ export default class SDKKeysCache implements SDKKeysCacheInterface {
     return Promise.resolve();
   }
   clear(): Promise<void> {
-    this.cache.clear();
+    this.cache = null;
     return Promise.resolve();
   }
 }

@@ -539,6 +539,13 @@ export default class StatsigOnPrem implements StatsigInterface {
   }
 
   public async getRegisteredSDKKeys(): Promise<Set<string>> {
-    return this.cache.getSDKKeys();
+    const cachedKeys = await this.cache.getSDKKeys();
+    if (cachedKeys) {
+      return cachedKeys;
+    }
+
+    const sdkKeys = await this.store.getRegisteredSDKKeys();
+    await this.cache.cacheSDKKeys(sdkKeys);
+    return sdkKeys;
   }
 }

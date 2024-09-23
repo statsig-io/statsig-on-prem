@@ -5,9 +5,9 @@
  */
 export interface SDKKeysCacheInterface {
   /**
-   * Returns SDK keys.
+   * Returns SDK keys, or null if the cache has not been populated yet.
    */
-  get(): Promise<Set<string>>;
+  get(): Promise<Set<string> | null>;
   /**
    * Updates SDK keys.
    * @param keys - Set of SDK keys to store
