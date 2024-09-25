@@ -18,7 +18,7 @@ import type {
 import { EntityNames } from "./types/EntityNames";
 import { GLOBAL_ASSOC_KEY } from "./utils/StorageUtils";
 import { ConfigSpecs } from "./types/ConfigSpecs";
-import ConfigSpecsUtils from "./utils/ConfigSpecsUtils";
+import ConfigSpecsUtils, { ConfigSpecsOptions } from "./utils/ConfigSpecsUtils";
 import { filterNulls } from "./utils/filterNulls";
 import EntityExperiment from "./entities/EntityExperiment";
 import EntityDynamicConfig from "./entities/EntityDynamicConfig";
@@ -26,7 +26,6 @@ import EntityFeatureGate from "./entities/EntityFeatureGate";
 import { IDUtils } from "./utils/IDUtils";
 import { SpecsCacheInterface } from "./interfaces/SpecsCacheInterface";
 import StorageHandler from "./utils/StorageHandler";
-import HashUtils from "./utils/HashUtils";
 import { TargetAppNames } from "./types/TargetAppNames";
 import CacheHandler from "./utils/CacheHandler";
 import { SDKKeysCacheInterface } from "./interfaces/SDKKeyCacheInterface";
@@ -86,13 +85,16 @@ export default class StatsigOnPrem implements StatsigInterface {
     }
   }
 
-  public async getConfigSpecs(sdkKey: string): Promise<ConfigSpecs> {
+  public async getConfigSpecs(
+    sdkKey: string,
+    options?: ConfigSpecsOptions
+  ): Promise<ConfigSpecs> {
     const registeredKeys = await this.store.getRegisteredSDKKeys();
     if (!registeredKeys.has(sdkKey)) {
       console.warn("Attempting to use a non-registered key");
     }
 
-    const cachedSpecs = await this.cache.getSpecs(sdkKey);
+    const cachedSpecs = await this.cache.getSpecs(sdkKey, options);
     if (cachedSpecs) {
       return cachedSpecs;
     }
@@ -133,35 +135,6 @@ export default class StatsigOnPrem implements StatsigInterface {
       )
     );
 
-    const hashedSDKKeysToEntityNames = new Map(
-      filterNulls(
-        await Promise.all(
-          Array.from(registeredKeys).map(async (key) => {
-            const targetApps = await this.store.getTargetAppsFromSDKKey(key);
-            if (targetApps == null) {
-              return null;
-            }
-            const entities =
-              await this.store.getEntityAssocsForMultipleTargetApps(targetApps);
-            if (entities == null) {
-              return null;
-            }
-            const hashedKey = HashUtils.hashString(key);
-            return [
-              hashedKey,
-              {
-                gates: Array.from(entities.gates),
-                configs: [
-                  ...Array.from(entities.configs),
-                  ...Array.from(entities.experiments),
-                ],
-              },
-            ];
-          })
-        )
-      )
-    );
-
     const configSpecs: ConfigSpecs = {
       feature_gates: gates.map((gate) => ConfigSpecsUtils.getConfigSpec(gate)),
       dynamic_configs: [...configs, ...experiments].map((config) =>
@@ -169,13 +142,19 @@ export default class StatsigOnPrem implements StatsigInterface {
       ),
       layer_configs: [],
       layers: {},
-      hashed_sdk_keys_to_entities: Object.fromEntries(
-        hashedSDKKeysToEntityNames
-      ),
       has_updates: true,
       time: Date.now(),
     };
-    await this.cache.cacheSpecs(sdkKey, configSpecs);
+
+    if (options?.ssr) {
+      configSpecs.hashed_sdk_keys_to_entities =
+        await ConfigSpecsUtils.getHashedSDKKeysToEntities(
+          this.store,
+          options?.ssr
+        );
+    }
+
+    await this.cache.cacheSpecs(sdkKey, options, configSpecs);
     return configSpecs;
   }
 
@@ -521,7 +500,12 @@ export default class StatsigOnPrem implements StatsigInterface {
     await this.cache.clearSpecs(sdkKey);
   }
 
-  public async getTargetAppNames(): Promise<TargetAppNames> {
+  public async getTargetAppNames(
+    sdkKey?: string
+  ): Promise<TargetAppNames | null> {
+    if (sdkKey) {
+      return this.store.getTargetAppsFromSDKKey(sdkKey);
+    }
     return this.store.getTargetAppNames();
   }
 

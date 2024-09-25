@@ -81,10 +81,26 @@ describe("Target Apps", () => {
     await statsig.registerSDKKey("server-key");
     await statsig.registerSDKKey("client-key");
     await statsig.assignTargetAppsToSDKKey(["clientApp"], "client-key");
-    const configSpecs = await statsig.getConfigSpecs("server-key");
+
+    // Lookup via client keys
+    let configSpecs = await statsig.getConfigSpecs("server-key", {
+      ssr: { clientKeys: ["client-key"] },
+    });
     const hashedClientKey = HashUtils.hashString("client-key");
     expect(configSpecs.hashed_sdk_keys_to_entities).toEqual({
       [hashedClientKey]: {
+        gates: ["gate_1"],
+        configs: ["config_1", "exp_1"],
+      },
+    });
+
+    // Lookup via target apps
+    configSpecs = await statsig.getConfigSpecs("server-key", {
+      ssr: { targetApps: ["clientApp"] },
+    });
+    const hashedTargetApp = HashUtils.hashString("clientApp");
+    expect(configSpecs.hashed_sdk_keys_to_entities).toEqual({
+      [hashedTargetApp]: {
         gates: ["gate_1"],
         configs: ["config_1", "exp_1"],
       },

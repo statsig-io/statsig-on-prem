@@ -4,6 +4,7 @@ import SDKKeysCache from "../SDKKeysCache";
 import SpecsCache from "../SpecsCache";
 import { ConfigSpecs } from "../types/ConfigSpecs";
 import CacheUtils from "./CacheUtils";
+import { ConfigSpecsOptions } from "./ConfigSpecsUtils";
 
 type CacheLibrary = { specs: SpecsCacheInterface; keys: SDKKeysCacheInterface };
 
@@ -16,13 +17,20 @@ export default class CacheHandler {
     };
   }
 
-  public async cacheSpecs(sdkKey: string, specs: ConfigSpecs): Promise<void> {
-    const cacheKey = CacheUtils.getCacheKey(sdkKey);
+  public async cacheSpecs(
+    sdkKey: string,
+    options: ConfigSpecsOptions | undefined,
+    specs: ConfigSpecs
+  ): Promise<void> {
+    const cacheKey = CacheUtils.getCacheKey(sdkKey, options);
     await this.cache.specs.set(cacheKey, specs);
   }
 
-  public async getSpecs(sdkKey: string): Promise<ConfigSpecs | null> {
-    const cacheKey = CacheUtils.getCacheKey(sdkKey);
+  public async getSpecs(
+    sdkKey: string,
+    options: ConfigSpecsOptions | undefined
+  ): Promise<ConfigSpecs | null> {
+    const cacheKey = CacheUtils.getCacheKey(sdkKey, options);
     return await this.cache.specs.get(cacheKey);
   }
 
