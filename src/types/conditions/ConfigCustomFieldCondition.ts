@@ -34,7 +34,7 @@ const AllowedOperators = z.union([
   z.literal(APIOperatorType.STR_MATCHES),
 ]);
 const AllowedValues = z.union([z.string(), z.number()]);
-const AllowedFields = z.nativeEnum(APIFieldName);
+const AllowedFields = z.union([z.nativeEnum(APIFieldName), z.string()]);
 
 export const CustomFieldConditionInputSchema = SupportedOperations(
   AllowedOperators,
@@ -49,7 +49,7 @@ export type CustomFieldConditionInput = OmitUndefined<
 export default class ConfigCustomFieldCondition extends ConfigCondition {
   protected operator: z.infer<typeof AllowedOperators>;
   protected targetValue: z.infer<typeof AllowedValues>;
-  protected field: APIFieldName;
+  protected field: APIFieldName | string;
 
   constructor(input: CustomFieldConditionInput) {
     super();
@@ -75,7 +75,7 @@ export default class ConfigCustomFieldCondition extends ConfigCondition {
     return this.operator;
   }
 
-  public getField(): APIFieldName {
+  public getField(): APIFieldName | string {
     return this.field;
   }
 
