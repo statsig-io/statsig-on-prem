@@ -33,7 +33,13 @@ const AllowedOperators = z.union([
   z.literal(APIOperatorType.BEFORE),
   z.literal(APIOperatorType.STR_MATCHES),
 ]);
-const AllowedValues = z.union([z.string(), z.number()]);
+const AllowedValues = z.union([
+  z.string(),
+  z.string().array(),
+  z.number(),
+  z.number().array(),
+  z.null(),
+]);
 const AllowedFields = z.union([z.nativeEnum(APIFieldName), z.string()]);
 
 export const CustomFieldConditionInputSchema = SupportedOperations(
