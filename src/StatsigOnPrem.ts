@@ -72,6 +72,8 @@ export default class StatsigOnPrem implements StatsigInterface {
         }
       })
     );
+    const globalSDKKeys = await this.getGlobalSDKKeys();
+    await this.cache.clearSpecs(...Array.from(globalSDKKeys));
   }
 
   public async clearCacheForEntity(
@@ -531,5 +533,21 @@ export default class StatsigOnPrem implements StatsigInterface {
     const sdkKeys = await this.store.getRegisteredSDKKeys();
     await this.cache.cacheSDKKeys(sdkKeys);
     return sdkKeys;
+  }
+
+  public async getGlobalSDKKeys(): Promise<Set<string>> {
+    const cached = await this.cache.getGlobalSDKKeys();
+    if (cached) {
+      return cached;
+    }
+    const sdkKeys = await this.getRegisteredSDKKeys();
+    const globalKeys = new Set(
+      Array.from(sdkKeys).filter(async (sdkKey) => {
+        const targetApps = await this.store.getTargetAppsFromSDKKey(sdkKey);
+        return targetApps == null;
+      })
+    );
+    await this.cache.cacheGlobalSDKKeys(globalKeys);
+    return globalKeys;
   }
 }

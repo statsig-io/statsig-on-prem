@@ -16,5 +16,18 @@ export interface SDKKeysCacheInterface {
   /**
    * Clears cached SDK keys.
    */
-   clear(): Promise<void>;
+  clear(): Promise<void>;
+  /**
+   * Returns global SDK keys (no target app assignment), or null if the cache has not been populated yet.
+   */
+  getGlobal(): Promise<Set<string> | null>;
+  /**
+   * Updates global SDK keys.
+   * @param keys - Set of SDK keys to store
+   */
+  setGlobal(keys: Set<string>): Promise<void>;
+  /**
+   * Clears cached global SDK keys.
+   */
+  clearGlobal(): Promise<void>;
 }
