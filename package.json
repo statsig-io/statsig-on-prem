@@ -1,6 +1,6 @@
 {
   "name": "statsig-on-prem",
-  "version": "0.0.0-beta.15",
+  "version": "0.0.0-beta.16",
   "description": "Statsig on-premise solution for managing gates, experiments, etc.",
   "main": "dist/index.js",
   "scripts": {
