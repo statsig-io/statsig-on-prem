@@ -30,6 +30,7 @@ import { TargetAppNames } from "./types/TargetAppNames";
 import CacheHandler from "./utils/CacheHandler";
 import { SDKKeysCacheInterface } from "./interfaces/SDKKeyCacheInterface";
 import ConfigRuleBuilder from "./utils/ConfigRuleBuilder";
+import { genFilter } from "./utils/genFilter";
 
 type Plugins = Partial<{
   specsCache: SpecsCacheInterface;
@@ -542,7 +543,7 @@ export default class StatsigOnPrem implements StatsigInterface {
     }
     const sdkKeys = await this.getRegisteredSDKKeys();
     const globalKeys = new Set(
-      Array.from(sdkKeys).filter(async (sdkKey) => {
+      await genFilter(Array.from(sdkKeys), async (sdkKey) => {
         const targetApps = await this.store.getTargetAppsFromSDKKey(sdkKey);
         return targetApps == null;
       })
