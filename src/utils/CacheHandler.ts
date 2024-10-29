@@ -23,7 +23,7 @@ export default class CacheHandler {
     specs: ConfigSpecs
   ): Promise<void> {
     const cacheKey = CacheUtils.getCacheKey(sdkKey, options);
-    await this.cache.specs.set(cacheKey, specs);
+    await this.cache.specs.set(sdkKey, cacheKey, specs);
   }
 
   public async getSpecs(
@@ -31,15 +31,14 @@ export default class CacheHandler {
     options: ConfigSpecsOptions | undefined
   ): Promise<ConfigSpecs | null> {
     const cacheKey = CacheUtils.getCacheKey(sdkKey, options);
-    return await this.cache.specs.get(cacheKey);
+    return await this.cache.specs.get(sdkKey, cacheKey);
   }
 
   public async clearSpecs(...sdkKeys: string[]) {
     if (sdkKeys.length > 0) {
       await Promise.all(
         sdkKeys.map((sdkKey) => {
-          const cacheKey = CacheUtils.getCacheKey(sdkKey);
-          return this.cache.specs.clear(cacheKey);
+          return this.cache.specs.clear(sdkKey);
         })
       );
     } else {
