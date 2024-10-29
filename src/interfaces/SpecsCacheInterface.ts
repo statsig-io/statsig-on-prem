@@ -8,20 +8,28 @@ import { ConfigSpecs } from "../types/ConfigSpecs";
 export interface SpecsCacheInterface {
   /**
    * Returns specs stored for a given key, or null if the cache has not been populated yet.
-   * @param key - Key of stored specs
+   * @param key - Primary key of stored specs
+   * @param field - Secondary key of stored specs
    */
-  get(key: string): Promise<ConfigSpecs | null>;
+  get(key: string, field: string): Promise<ConfigSpecs | null>;
   /**
    * Updates specs for a given key.
-   * @param key - Key of stored specs
+   * @param key - Primary key of stored specs
+   * @param field - Secondary key of stored specs
    * @param specs - New specs to store
    */
-  set(key: string, specs: ConfigSpecs): Promise<void>;
+  set(key: string, field: string, specs: ConfigSpecs): Promise<void>;
   /**
    * Clears specs for a given key.
-   * @param key - Key of stored specs
+   * @param key - Primary key of stored specs
    */
   clear(key: string): Promise<void>;
+  /**
+   * Clears specs for a given key.
+   * @param key - Primary key of stored specs
+   * @param field - Secondary key of stored specs
+   */
+  clear(key: string, field: string): Promise<void>;
   /**
    * Clears all specs.
    */
