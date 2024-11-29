@@ -488,6 +488,7 @@ export default class StatsigOnPrem implements StatsigInterface {
   ): Promise<void> {
     await this.store.assignTargetAppsToSDKKey(targetApps, sdkKey);
     await this.cache.clearSpecs(sdkKey);
+    await this.cache.clearGlobalSDKKeys();
   }
 
   public async removeTargetAppsFromSDKKey(
@@ -496,11 +497,13 @@ export default class StatsigOnPrem implements StatsigInterface {
   ): Promise<void> {
     await this.store.removeTargetAppsFromSDKKey(targetApps, sdkKey);
     await this.cache.clearSpecs(sdkKey);
+    await this.cache.clearGlobalSDKKeys();
   }
 
   public async clearTargetAppsFromSDKKey(sdkKey: string): Promise<void> {
     await this.store.clearTargetAppsFromSDKKey(sdkKey);
     await this.cache.clearSpecs(sdkKey);
+    await this.cache.clearGlobalSDKKeys();
   }
 
   public async getTargetAppNames(
@@ -517,12 +520,14 @@ export default class StatsigOnPrem implements StatsigInterface {
   public async registerSDKKey(sdkKey: string): Promise<void> {
     const sdkKeys = await this.store.addSDKKey(sdkKey);
     await this.cache.cacheSDKKeys(sdkKeys);
+    await this.cache.clearGlobalSDKKeys();
   }
 
   public async deactivateSDKKey(sdkKey: string): Promise<void> {
     const sdkKeys = await this.store.removeSDKKey(sdkKey);
     await this.cache.cacheSDKKeys(sdkKeys);
     await this.cache.clearSpecs(sdkKey);
+    await this.cache.clearGlobalSDKKeys();
   }
 
   public async getRegisteredSDKKeys(): Promise<Set<string>> {

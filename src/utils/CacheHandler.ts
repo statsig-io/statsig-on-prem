@@ -62,6 +62,10 @@ export default class CacheHandler {
     return await this.cache.keys.getGlobal();
   }
 
+  public async clearGlobalSDKKeys(): Promise<void> {
+    await this.cache.keys.clearGlobal();
+  }
+
   public async clearSDKKeys(): Promise<void> {
     await this.cache.keys.clear();
     await this.cache.keys.clearGlobal();
