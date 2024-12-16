@@ -92,14 +92,14 @@ export default class StatsigOnPrem implements StatsigInterface {
     sdkKey: string,
     options?: ConfigSpecsOptions
   ): Promise<ConfigSpecs> {
-    const registeredKeys = await this.store.getRegisteredSDKKeys();
-    if (!registeredKeys.has(sdkKey)) {
-      console.warn("Attempting to use a non-registered key");
-    }
-
     const cachedSpecs = await this.cache.getSpecs(sdkKey, options);
     if (cachedSpecs) {
       return cachedSpecs;
+    }
+
+    const registeredKeys = await this.getRegisteredSDKKeys();
+    if (!registeredKeys.has(sdkKey)) {
+      console.warn("Attempting to use a non-registered key");
     }
 
     const targetApps = await this.store.getTargetAppsFromSDKKey(sdkKey);
